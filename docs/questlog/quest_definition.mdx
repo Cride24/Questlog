@@ -294,3 +294,10 @@ You can add a `badge` object to your quest definition JSON to define a custom ba
 ```
 
 **Note for Animated Badges:** If you want the badge to animate, your `texture` image must be a vertical spritesheet where each frame is stacked on top of one another. The game will automatically read the `height` value and shift the rendering down for each frame based on the `frame_time` you set.
+
+## Labels and panel dimensions
+
+Long titles, objective names and reward names wrap within their respective panel widths.
+For an explicit line break, use `\n` in a JSON string, for example
+`"name": "Craft:\nWooden Axe"`. The status appears below the wrapped name.
+Existing panel dimension/offset properties continue to apply to each quest.
