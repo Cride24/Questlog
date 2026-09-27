@@ -344,26 +344,20 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     }
 
     private void renderImageTooltip(GuiGraphics ps, String data, int mouseX, int mouseY) {
-        String[] parts = data.split(":");
-        if (parts.length >= 3) {
-            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(parts[1], parts[2]);
-            int w = parts.length >= 4 ? Integer.parseInt(parts[3]) : 16;
-            int h = parts.length >= 5 ? Integer.parseInt(parts[4]) : 16;
-
-            ps.pose().pushPose();
+        org.infernalstudios.questlog.util.texture.ImageTooltipData image =
+                org.infernalstudios.questlog.util.texture.ImageTooltipData.parse(data);
+        if (image == null) return;
+        int w = image.width();
+        int h = image.height();
+        ps.pose().pushPose();
+        try {
             ps.pose().translate(0.0F, 0.0F, 400.0F);
-
             ps.fill(mouseX + 8, mouseY - 8, mouseX + 8 + w + 4, mouseY - 8 + h + 4, 0xDD000000);
-
-            Blittable textureToRender;
-            if (parts.length >= 7) {
-                int frames = Integer.parseInt(parts[5]);
-                int frameTime = Integer.parseInt(parts[6]);
-                textureToRender = new AnimatedTexture(loc, w, h, 0, 0, w, h * frames, frames, frameTime);
-            } else {
-                textureToRender = new Texture(loc, w, h, 0, 0, w, h);
-            }
-            textureToRender.blit(ps, mouseX + 10, mouseY - 6);
+            Blittable texture = image.frames() > 0
+                    ? new AnimatedTexture(image.texture(), w, h, 0, 0, w, h * image.frames(), image.frames(), image.frameTime())
+                    : new Texture(image.texture(), w, h, 0, 0, w, h);
+            texture.blit(ps, mouseX + 10, mouseY - 6);
+        } finally {
             ps.pose().popPose();
         }
     }
