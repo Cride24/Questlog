@@ -69,6 +69,7 @@ public class InfoEntry implements Renderable, GuiEventListener {
     }
 
     private int getNameHeight() {
+        if (Minecraft.getInstance() == null || Minecraft.getInstance().font == null) return 9;
         Font font = Minecraft.getInstance().font;
         boolean reward = this.rewardData != null;
         Blittable icon = reward ? this.rewardData.getIcon() : this.objectiveData.getIcon();
@@ -82,7 +83,7 @@ public class InfoEntry implements Renderable, GuiEventListener {
     }
 
     public int getHeight() {
-        return Math.max(INFO_ENTRY_HEIGHT, this.getNameHeight() + Minecraft.getInstance().font.lineHeight + 8);
+        return Math.max(INFO_ENTRY_HEIGHT, this.getNameHeight() + 17);
     }
 
     private void drawRewardStatus(GuiGraphics ps, int textX) {
