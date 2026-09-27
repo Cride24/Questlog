@@ -8,9 +8,7 @@ dependency must not automatically raise the minimum accepted by the mod metadata
 | NeoForge | 21.1.80 | Bundled upstream Triggers 1.0.1 requires this version. Questlog compiles against it. |
 | Fabric Loader | 0.15.11 | Fabric API 0.116.6+1.21.1 requires this version; Triggers and Cloth Config require only 0.14. |
 
-The optional quest details and reward overview use shared Minecraft APIs and do
-not introduce new loader API requirements. The loader-specific code uses existing
-event, configuration and networking APIs. Compilation checks API availability;
+The loader-specific code uses existing event, configuration and networking APIs. Compilation checks API availability;
 it does not replace startup, client/server networking or in-game tests.
 
 Use `neoforge_min_version` and `fabric_loader_min_version` for metadata. Use the

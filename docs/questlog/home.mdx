@@ -17,3 +17,19 @@ for example, `Objective[]` is an array of [`Objective`](./quest_definition#objec
 for example, `translatable?: boolean` means that the `translatable` property is optional, and if not provided, the default value will be inferred.
 
 Notice how these types have links. You can click on these links to jump to the respective section of the documentation.
+
+## Loader compatibility for Minecraft 1.21.1
+
+This branch targets Minecraft **1.21.1**. The minimum loader versions are:
+
+| Loader | Minimum version |
+| --- | --- |
+| NeoForge | 21.1.80 |
+| Fabric Loader | 0.15.11 |
+
+These are metadata minimums, not a requirement to install the newest loader release.
+Other mods in a pack can require a newer version. Fabric also requires Fabric API;
+the Triggers library is bundled in the supported builds. Minecraft 1.21.1 is supported
+through NeoForge and Fabric.
+See `LOADER_COMPATIBILITY.md` in the repository for the dependency reasons, build properties
+and recorded compilation checks.

@@ -41,3 +41,9 @@ GitHub! [https://github.com/infernalstudios/Questlog/issues](https://github.com/
 Video Showcase:
 
 <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/C2XfcEVSu6U" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+## Loader compatibility
+
+This branch targets Minecraft 1.21.1. Supported loader minimums, required external
+dependencies and build-version overrides are documented in [LOADER_COMPATIBILITY.md](./LOADER_COMPATIBILITY.md).
+The minimum accepted loader version is independent from the version used to compile.
