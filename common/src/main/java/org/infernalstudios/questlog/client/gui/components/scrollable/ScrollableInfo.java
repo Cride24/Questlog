@@ -51,21 +51,23 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
 
     @Override
     public int getHeight() {
-        return this.getEntries().size() * InfoEntry.INFO_ENTRY_HEIGHT;
+        return this.getEntries().stream().mapToInt(InfoEntry::getHeight).sum();
     }
 
     @Override
     public void render(@NotNull GuiGraphics ps, int mouseX, int mouseY, float partialTicks) {
         List<InfoEntry> entries = this.getEntries();
+        int entryY = 0;
         for (int i = 0; i < entries.size(); i++) {
             InfoEntry entry = entries.get(i);
             entry.x = this.parent != null ? (int) this.parent.getXOffset() : 0;
-            entry.y = this.parent != null ? (int) this.parent.getYOffset() + InfoEntry.INFO_ENTRY_HEIGHT * i : 0;
+            entry.y = (this.parent != null ? (int) this.parent.getYOffset() : 0) + entryY;
 
             int absMouseX = this.parent != null ? mouseX + (int) this.parent.getXOffset() : mouseX;
             int absMouseY = this.parent != null ? mouseY + (int) this.parent.getYOffset() : mouseY;
 
             entry.render(ps, absMouseX, absMouseY, partialTicks);
+            entryY += entry.getHeight();
         }
     }
 
@@ -78,14 +80,15 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (!questDetails.quest.isCompleted() || questDetails.quest.isRewarded()) return false;
         List<InfoEntry> entries = this.getEntries();
+        double entryY = 0;
         for (int i = 0; i < entries.size(); i++) {
-            double entryY = InfoEntry.INFO_ENTRY_HEIGHT * i;
-            if (mouseY >= entryY && mouseY < entryY + InfoEntry.INFO_ENTRY_HEIGHT) {
+            if (mouseY >= entryY && mouseY < entryY + entries.get(i).getHeight()) {
                 InfoEntry entry = entries.get(i);
                 if (entry.handleChoiceClick()) {
                     return true;
                 }
             }
+            entryY += entries.get(i).getHeight();
         }
         return false;
     }

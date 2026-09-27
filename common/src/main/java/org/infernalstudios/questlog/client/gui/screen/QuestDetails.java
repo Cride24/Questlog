@@ -37,8 +37,7 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     private static final int PANEL_SPACING = 6;
     private static final int BUTTON_SPACING = 6;
     private static final int TITLE_Y = 13;
-    private static final int TITLE_WIDTH = 132;
-    private static final int TITLE_HEIGHT = 16;
+        private static final int TITLE_HEIGHT = 16;
     private static final int CONTENT_X = 18;
     private static final int CONTENT_Y = 36;
     private static final int HR_Y_OFFSET = -2;
@@ -56,6 +55,10 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     private int panel2Y;
     @Nullable
     private QuestlogButton backButton;
+    @Nullable
+    private QuestlogButton actionButton;
+    private java.util.List<net.minecraft.util.FormattedCharSequence> titleLines;
+    private int titleHeight;
     @Nullable
     private QuestlogButton objectivesButton;
     @Nullable
@@ -118,6 +121,9 @@ public class QuestDetails extends Screen implements NarrationSupplier {
         this.panel2X = baseX + leftWidth + PANEL_SPACING + this.getDisplay().getRightPanelXOffset();
         this.panel2Y = baseY + this.getDisplay().getRightPanelYOffset();
 
+        int iconWidth = this.getDisplay().getIcon() != null ? this.getDisplay().getIcon().width() + 4 : 0;
+        this.titleLines = this.font.split(this.getDisplay().getTitle(), Math.max(1, leftWidth - 36 - iconWidth));
+        this.titleHeight = Math.max(TITLE_HEIGHT, this.titleLines.size() * this.font.lineHeight + 4);
         this.setupButtons();
         this.setupContent();
     }
@@ -134,7 +140,7 @@ public class QuestDetails extends Screen implements NarrationSupplier {
                 this.getPalette().textColor(),
                 this.getPalette().hoveredTextColor(),
                 Component.empty(),
-                this::handlePrimaryAction,
+                () -> { if (this.minecraft != null) this.minecraft.setScreen(this.previousScreen); },
                 this.getGuiSet()
         );
 
@@ -156,6 +162,9 @@ public class QuestDetails extends Screen implements NarrationSupplier {
             this.objectivesButton = null;
         }
 
+        this.actionButton = new QuestlogButton(0, buttonY, this.getPalette().textColor(),
+                this.getPalette().hoveredTextColor(), Component.empty(), this::handlePrimaryAction, this.getGuiSet());
+        this.addRenderableWidget(this.actionButton);
         this.updateButtonLayout(rightBoundary);
 
         this.addRenderableWidget(this.backButton);
@@ -164,37 +173,41 @@ public class QuestDetails extends Screen implements NarrationSupplier {
         }
     }
 
-    private void updateButtonLayout(int rightBoundary) {
-        if (this.backButton == null) return;
-        Component backText = this.getDisplay().getBackButtonText();
-
+    private Component getActionText() {
         if (this.quest.isCompleted() && !this.quest.isRewarded()) {
-            boolean hasIncompleteChoices = false;
-            for (Reward reward : this.quest.rewards) {
-                if (!reward.hasRewarded() && reward instanceof org.infernalstudios.questlog.core.quests.rewards.ChoiceReward choiceReward && !choiceReward.canClaim()) {
-                    hasIncompleteChoices = true;
-                    break;
-                }
-            }
-            if (hasIncompleteChoices) {
-                backText = Component.translatable("questlog.reward.make_choices");
-            } else {
-                backText = this.getDisplay().getCollectButtonText();
-            }
-        } else if (this.quest.isCompleted() && this.quest.isRewarded() && this.quest.isRepeatable()) {
-            backText = Component.translatable("questlog.reward.reset");
-        } else if (this.needsRead()) {
-            backText = Component.translatable("questlog.button.read");
+            return this.canClaimRewards() ? this.getDisplay().getCollectButtonText()
+                    : Component.translatable("questlog.reward.make_choices");
         }
+        if (this.quest.isCompleted() && this.quest.isRewarded() && this.quest.isRepeatable()) {
+            return Component.translatable("questlog.reward.reset");
+        }
+        return this.needsRead() ? Component.translatable("questlog.button.read") : null;
+    }
 
-        this.backButton.setMessage(backText);
+    private boolean canClaimRewards() {
+        for (Reward reward : this.quest.rewards) {
+            if (!reward.hasRewarded() && reward instanceof org.infernalstudios.questlog.core.quests.rewards.ChoiceReward choice
+                    && !choice.canClaim()) return false;
+        }
+        return true;
+    }
 
-        int backWidth = this.backButton.getExpectedWidth();
-        this.backButton.setX(rightBoundary - backWidth);
-
+    private void updateButtonLayout(int rightBoundary) {
+        if (this.backButton == null || this.actionButton == null) return;
+        this.backButton.setMessage(this.getDisplay().getBackButtonText());
+        this.backButton.setX(rightBoundary - this.backButton.getExpectedWidth());
+        int nextRight = this.backButton.getX() - BUTTON_SPACING;
+        Component action = this.getActionText();
+        this.actionButton.visible = action != null;
+        this.actionButton.active = action != null && (!(this.quest.isCompleted() && !this.quest.isRewarded())
+                || this.canClaimRewards());
+        if (action != null) {
+            this.actionButton.setMessage(action);
+            this.actionButton.setX(nextRight - this.actionButton.getExpectedWidth());
+            nextRight = this.actionButton.getX() - BUTTON_SPACING;
+        }
         if (this.objectivesButton != null) {
-            int objWidth = this.objectivesButton.getExpectedWidth();
-            this.objectivesButton.setX(this.backButton.getX() - objWidth - BUTTON_SPACING);
+            this.objectivesButton.setX(nextRight - this.objectivesButton.getExpectedWidth());
         }
     }
 
@@ -239,9 +252,9 @@ public class QuestDetails extends Screen implements NarrationSupplier {
 
         this.description = new ScrollableComponent(
                 this.panel1X + CONTENT_X,
-                this.panel1Y + CONTENT_Y,
+                this.panel1Y + TITLE_Y + this.titleHeight + 7,
                 leftWidth - 38,
-                height - 68,
+                Math.max(1, height - 68 - (this.titleHeight - TITLE_HEIGHT)),
                 new ScrollableText(this.minecraft.font, this.getDisplay().getDescription(this.quest), this.getPalette().textColor())
         );
 
@@ -391,24 +404,19 @@ public class QuestDetails extends Screen implements NarrationSupplier {
 
     private void renderTitle(GuiGraphics ps) {
         QuestDisplayData display = this.getDisplay();
-        int leftWidth = display.getLeftPanelWidth();
-
-        int titleAreaX = (leftWidth - TITLE_WIDTH) / 2;
         int iconWidth = display.getIcon() != null ? display.getIcon().width() + 4 : 0;
-        float totalTitleWidth = this.font.width(display.getTitle()) + iconWidth;
-
-        float x = this.panel1X + titleAreaX + (TITLE_WIDTH - totalTitleWidth) / 2;
-        float y = this.panel1Y + TITLE_Y;
-
+        int textWidth = this.titleLines.stream().mapToInt(this.font::width).max().orElse(0);
+        int x = this.panel1X + (display.getLeftPanelWidth() - textWidth - iconWidth) / 2;
         if (display.getIcon() != null) {
-            display.getIcon().blit(ps, (int) x, this.panel1Y + TITLE_Y);
-            x += iconWidth;
+            display.getIcon().blit(ps, x, this.panel1Y + TITLE_Y);
         }
-
-        y += (float) (TITLE_HEIGHT - this.font.lineHeight + 2) / 2;
-        ps.drawString(font, display.getTitle(), (int) x, (int) y, this.getPalette().titleColor(), false);
-
-        this.getGuiSet().smallHR.blit(ps, this.panel1X + titleAreaX - 60, this.panel1Y + TITLE_Y + TITLE_HEIGHT + HR_Y_OFFSET);
+        int y = this.panel1Y + TITLE_Y + 4;
+        for (net.minecraft.util.FormattedCharSequence line : this.titleLines) {
+            ps.drawString(this.font, line, x + iconWidth, y, this.getPalette().titleColor(), false);
+            y += this.font.lineHeight;
+        }
+        this.getGuiSet().smallHR.blit(ps, this.panel1X + (display.getLeftPanelWidth() - 132) / 2 - 60,
+                this.panel1Y + TITLE_Y + this.titleHeight + HR_Y_OFFSET);
     }
 
     private void renderInfo(GuiGraphics ps, int mouseX, int mouseY, float partialTicks) {
@@ -430,39 +438,7 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     @Override
     public void tick() {
         super.tick();
-
-        boolean isShowingCollect = this.backButton != null &&
-                (this.backButton.getMessage().getString().equals(this.getDisplay().getCollectButtonText().getString()) ||
-                        this.backButton.getMessage().getString().equals(Component.translatable("questlog.reward.make_choices").getString()));
-
-        if (isShowingCollect && this.quest.isRewarded()) {
-            this.rebuildWidgets();
-        } else if (this.backButton != null && isShowingCollect) {
-            boolean canClaim = true;
-            for (Reward reward : this.quest.rewards) {
-                if (!reward.hasRewarded() && reward instanceof org.infernalstudios.questlog.core.quests.rewards.ChoiceReward choiceReward && !choiceReward.canClaim()) {
-                    canClaim = false;
-                    break;
-                }
-            }
-            this.backButton.active = canClaim;
-            Component expectedText = canClaim ? this.getDisplay().getCollectButtonText() : Component.translatable("questlog.reward.make_choices");
-            if (!this.backButton.getMessage().getString().equals(expectedText.getString())) {
-                this.backButton.setMessage(expectedText);
-                int rightBoundary = this.panel1X + this.getDisplay().getLeftPanelWidth() + (showDetails ? this.getDisplay().getRightPanelWidth() : 0);
-                this.updateButtonLayout(rightBoundary);
-            }
-        }
-
-        if (this.backButton != null && !this.needsRead() &&
-                this.backButton.getMessage().getString().equals(Component.translatable("questlog.button.read").getString())) {
-            this.rebuildWidgets();
-        }
-
-        if (this.backButton != null && !this.quest.isCompleted() &&
-                this.backButton.getMessage().getString().equals(Component.translatable("questlog.reward.reset").getString())) {
-            this.rebuildWidgets();
-        }
+        this.updateButtonLayout(this.panel1X + this.getDisplay().getLeftPanelWidth() - 12);
     }
 
     @Override

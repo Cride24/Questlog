@@ -55,21 +55,10 @@ public class InfoEntry implements Renderable, GuiEventListener {
         int maxWidth = questDetails.getDisplay().getRightPanelWidth() - 36 - 15 - (icon != null ? 20 : 0) - indent;
 
         Font font = Minecraft.getInstance().font;
-        Component renderedName = name;
-        boolean truncated = false;
-
-        if (font.width(name) > maxWidth) {
-            renderedName = Component.literal(font.plainSubstrByWidth(name.getString(), maxWidth - font.width("...")) + "...");
-            truncated = true;
-        }
-
-        boolean isSubReward = isReward && rewardData.getReward() != null && rewardData.getReward().getContainer() != null;
-        int nameY = isSubReward ? this.y + 9 : this.y + 2;
-
-        ps.drawString(font, renderedName, textX, nameY, questDetails.getPalette().textColor(), false);
-
-        if (truncated && mouseX >= textX && mouseX <= textX + font.width(renderedName) && mouseY >= nameY && mouseY <= nameY + font.lineHeight) {
-            this.questDetails.pendingTooltip = name;
+        int nameY = this.y + 2;
+        for (net.minecraft.util.FormattedCharSequence line : font.split(name, Math.max(1, maxWidth))) {
+            ps.drawString(font, line, textX, nameY, questDetails.getPalette().textColor(), false);
+            nameY += font.lineHeight;
         }
 
         if (isReward) {
@@ -77,6 +66,23 @@ public class InfoEntry implements Renderable, GuiEventListener {
         } else {
             this.drawObjectiveStatus(ps, textX);
         }
+    }
+
+    private int getNameHeight() {
+        Font font = Minecraft.getInstance().font;
+        boolean reward = this.rewardData != null;
+        Blittable icon = reward ? this.rewardData.getIcon() : this.objectiveData.getIcon();
+        int indent = (reward ? this.rewardData.getIndentLevel() : this.objectiveData.getIndentLevel()) * 12;
+        int width = this.questDetails.getDisplay().getRightPanelWidth() - 51 - indent - (icon != null ? 20 : 0);
+        return font.split(reward ? this.rewardData.getName() : this.objectiveData.getName(), Math.max(1, width)).size() * font.lineHeight;
+    }
+
+    private int getStatusY() {
+        return this.y + 4 + this.getNameHeight();
+    }
+
+    public int getHeight() {
+        return Math.max(INFO_ENTRY_HEIGHT, this.getNameHeight() + Minecraft.getInstance().font.lineHeight + 8);
     }
 
     private void drawRewardStatus(GuiGraphics ps, int textX) {
@@ -87,12 +93,12 @@ public class InfoEntry implements Renderable, GuiEventListener {
                 (display != null ? display.getCollectedText() : Component.translatable("questlog.reward.collected")) :
                 (display != null ? display.getUncollectedText() : Component.translatable("questlog.reward.uncollected"));
 
-        ps.drawString(Minecraft.getInstance().font, status, textX, this.y + 13,
+        ps.drawString(Minecraft.getInstance().font, status, textX, this.getStatusY(),
                 rewardData.hasRewarded() ? questDetails.getPalette().completedTextColor() : questDetails.getPalette().progressTextColor(), false);
     }
 
     private void drawObjectiveStatus(GuiGraphics ps, int textX) {
-        ps.drawString(Minecraft.getInstance().font, objectiveData.getProgress(), textX, this.y + 13,
+        ps.drawString(Minecraft.getInstance().font, objectiveData.getProgress(), textX, this.getStatusY(),
                 objectiveData.isCompleted() ? questDetails.getPalette().completedTextColor() : questDetails.getPalette().progressTextColor(), false);
     }
 
