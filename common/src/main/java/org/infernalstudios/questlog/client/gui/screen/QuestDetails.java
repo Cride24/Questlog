@@ -254,7 +254,7 @@ public class QuestDetails extends Screen implements NarrationSupplier {
                     this.panel2Y + CONTENT_Y,
                     rightWidth - 36,
                     height - 68,
-                    new ScrollableInfo(this, this.getDisplay(), Questlog.getConfig().preferences.showRewardPreviews)
+                    new ScrollableInfo(this, this.getDisplay(), this.showRewardPreviews())
             );
 
             this.addWidget(this.info);
@@ -418,7 +418,7 @@ public class QuestDetails extends Screen implements NarrationSupplier {
         int rightWidth = this.getDisplay().getRightPanelWidth();
 
         Component title = this.quest.isCompleted()
-                || (Questlog.getConfig().preferences.showRewardPreviews && this.getDisplay().getObjectiveDisplayData().isEmpty())
+                || (this.showRewardPreviews() && this.getDisplay().getObjectiveDisplayData().isEmpty())
                 ? Component.translatable("questlog.info.rewards")
                 : Component.translatable("questlog.info.objectives");
 
@@ -429,6 +429,10 @@ public class QuestDetails extends Screen implements NarrationSupplier {
         this.getGuiSet().panelHR.blit(ps, this.panel2X + (rightWidth - 140) / 2, this.panel2Y + TITLE_Y + TITLE_HEIGHT + HR_Y_OFFSET);
 
         this.info.render(ps, mouseX, mouseY, partialTicks);
+    }
+
+    private boolean showRewardPreviews() {
+        return this.getDisplay().shouldShowRewardPreviews(Questlog.getConfig().preferences.showRewardPreviews);
     }
 
     @Override

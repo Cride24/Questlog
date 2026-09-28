@@ -29,6 +29,10 @@ public final class RewardOverviewVerification {
         ScrollableInfo previewInfo = info(quest, true);
         check(defaultInfo.getHeight() == 28, "Existing quests show only objectives by default");
         check(previewInfo.getHeight() == 80, "Opt-in preview adds rewards and their heading");
+        check(info(quest(1, 1, true), false).getHeight() == 80,
+                "Quest override can enable previews when the client default is off");
+        check(info(quest(1, 1, false), true).getHeight() == 28,
+                "Quest override can hide previews when the client default is on");
         check(!previewInfo.mouseClicked(0, 55, 0), "Cannot choose rewards before completion");
         CompoundTag completed = new CompoundTag();
         completed.putInt("units", 1);
@@ -48,13 +52,21 @@ public final class RewardOverviewVerification {
     }
 
     private static ScrollableInfo info(Quest quest, boolean showRewardPreviews) {
-        return new ScrollableInfo(new QuestDetails(null, quest), quest.getDisplay(), showRewardPreviews);
+        return new ScrollableInfo(new QuestDetails(null, quest), quest.getDisplay(),
+                quest.getDisplay().shouldShowRewardPreviews(showRewardPreviews));
     }
 
     private static Quest quest(int objectiveCount, int rewardCount) {
+        return quest(objectiveCount, rewardCount, null);
+    }
+
+    private static Quest quest(int objectiveCount, int rewardCount, Boolean rewardPreviewOverride) {
         JsonObject definition = new JsonObject();
         definition.addProperty("title", "Test");
         definition.addProperty("description", "Overview");
+        if (rewardPreviewOverride != null) {
+            definition.addProperty("show_rewards_before_completion", rewardPreviewOverride);
+        }
         List<Objective> objectives = new ArrayList<>();
         for (int i = 0; i < objectiveCount; i++) {
             JsonObject objective = new JsonObject();
