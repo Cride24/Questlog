@@ -22,7 +22,6 @@
 
     "questlog.info.objectives": "Objectives",
     "questlog.info.details": "Details",
-    "questlog.reward.available_after_completion": "Available on completion",
     "questlog.info.rewards": "Rewards",
 
     "command.questlog.argument.quest.unknown": "Unknown quest",
@@ -144,6 +143,8 @@
     "text.autoconfig.questlog-client.option.preferences.hideCompleted.@Tooltip": "Hides completed quests in the quest log",
     "text.autoconfig.questlog-client.option.preferences.descriptionsCondensed": "Condensed View",
     "text.autoconfig.questlog-client.option.preferences.descriptionsCondensed.@Tooltip": "Shows condensed quest entries in the quest log",
+    "text.autoconfig.questlog-client.option.preferences.showRewardPreviews": "Show Reward Previews",
+    "text.autoconfig.questlog-client.option.preferences.showRewardPreviews.@Tooltip": "Show quest rewards before completion. Disabled by default to preserve existing quest presentation",
 
     "questlog.editor.title": "Questlog Editor",
     "questlog.editor.back": "Back to Questlog",

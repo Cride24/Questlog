@@ -21,48 +21,49 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
     private static final int REWARD_HEADING_HEIGHT = 24;
     private final QuestDetails questDetails;
     private final QuestDisplayData display;
-    private List<InfoEntry> rewards;
-    private List<InfoEntry> objectives;
+    private final boolean showRewardPreviews;
     private List<InfoEntry> entries;
+    private boolean entriesCompleted;
     @Nullable
     private ScrollableComponent parent = null;
 
-    public ScrollableInfo(QuestDetails questDetails, QuestDisplayData display) {
+    public ScrollableInfo(QuestDetails questDetails, QuestDisplayData display, boolean showRewardPreviews) {
         this.questDetails = questDetails;
         this.display = display;
+        this.showRewardPreviews = showRewardPreviews;
+    }
+
+    private boolean isPreviewing() {
+        return this.showRewardPreviews && !this.questDetails.quest.isCompleted();
     }
 
     private List<InfoEntry> getEntries() {
-        if (this.entries != null) return this.entries;
-        if (this.objectives == null) {
-            this.objectives = new ArrayList<>();
-            for (ObjectiveDisplayData datum : this.display.getObjectiveDisplayData()) {
-                this.objectives.add(new InfoEntry(this.questDetails, datum, 0, 0));
+        boolean completed = this.questDetails.quest.isCompleted();
+        if (this.entries == null || this.entriesCompleted != completed) {
+            this.entries = new ArrayList<>();
+            if (!completed) {
+                for (ObjectiveDisplayData datum : this.display.getObjectiveDisplayData()) {
+                    this.entries.add(new InfoEntry(this.questDetails, datum, 0, 0));
+                }
             }
-        }
-        if (this.rewards == null) {
-            this.rewards = new ArrayList<>();
-            for (RewardDisplayData datum : this.display.getRewardDisplayData()) {
-                this.rewards.add(new InfoEntry(this.questDetails, datum, 0, 0, display));
+            if (completed || this.showRewardPreviews) {
+                for (RewardDisplayData datum : this.display.getRewardDisplayData()) {
+                    this.entries.add(new InfoEntry(this.questDetails, datum, 0, 0, display));
+                }
             }
+            this.entriesCompleted = completed;
         }
-        this.entries = new ArrayList<>(this.objectives);
-        this.entries.addAll(this.rewards);
         return this.entries;
     }
 
     private boolean hasRewardHeading() {
-        return !this.objectives.isEmpty() && !this.rewards.isEmpty();
-    }
-
-    private int getRewardStart() {
-        return this.objectives.size() * InfoEntry.INFO_ENTRY_HEIGHT
-                + (this.hasRewardHeading() ? REWARD_HEADING_HEIGHT : 0);
+        return this.isPreviewing() && !this.display.getObjectiveDisplayData().isEmpty()
+                && !this.display.getRewardDisplayData().isEmpty();
     }
 
     private int getEntryY(int index) {
         return InfoEntry.INFO_ENTRY_HEIGHT * index
-                + (index >= this.objectives.size() && this.hasRewardHeading() ? REWARD_HEADING_HEIGHT : 0);
+                + (index >= this.display.getObjectiveDisplayData().size() && this.hasRewardHeading() ? REWARD_HEADING_HEIGHT : 0);
     }
 
     @Override
@@ -77,7 +78,7 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
         if (this.hasRewardHeading()) {
             int x = this.parent != null ? (int) this.parent.getXOffset() : 0;
             int y = (this.parent != null ? (int) this.parent.getYOffset() : 0)
-                    + this.objectives.size() * InfoEntry.INFO_ENTRY_HEIGHT;
+                    + this.display.getObjectiveDisplayData().size() * InfoEntry.INFO_ENTRY_HEIGHT;
             int width = (this.parent != null ? this.parent.width : this.display.getRightPanelWidth() - 36) - 15;
             ps.fill(x, y + 4, x + width, y + 5, 0xFF000000 | this.questDetails.getPalette().progressTextColor());
             ps.drawString(Minecraft.getInstance().font, Component.translatable("questlog.info.rewards"),
@@ -104,11 +105,14 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button != GLFW.GLFW_MOUSE_BUTTON_1 || !questDetails.quest.isCompleted()
                 || questDetails.quest.isRewarded()) return false;
-        this.getEntries();
-        double rewardY = mouseY - this.getRewardStart();
-        if (rewardY < 0) return false;
-        int index = (int) (rewardY / InfoEntry.INFO_ENTRY_HEIGHT);
-        return index < this.rewards.size() && this.rewards.get(index).handleChoiceClick();
+        List<InfoEntry> entries = this.getEntries();
+        for (int i = 0; i < entries.size(); i++) {
+            double entryY = InfoEntry.INFO_ENTRY_HEIGHT * i;
+            if (mouseY >= entryY && mouseY < entryY + InfoEntry.INFO_ENTRY_HEIGHT) {
+                return entries.get(i).handleChoiceClick();
+            }
+        }
+        return false;
     }
 
     @Override
