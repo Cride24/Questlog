@@ -28,8 +28,8 @@ public final class RewardOverviewVerification {
         ScrollableInfo defaultInfo = info(quest, false);
         ScrollableInfo previewInfo = info(quest, true);
         check(defaultInfo.getHeight() == 28, "Existing quests show only objectives by default");
-        check(previewInfo.getHeight() == 80, "Opt-in preview adds rewards and their heading");
-        check(info(quest(1, 1, true), false).getHeight() == 80,
+        check(previewInfo.getHeight() == 90, "Opt-in preview adds rewards and their heading");
+        check(info(quest(1, 1, true), false).getHeight() == 90,
                 "Quest override can enable previews when the client default is off");
         check(info(quest(1, 1, false), true).getHeight() == 28,
                 "Quest override can hide previews when the client default is on");
@@ -46,8 +46,8 @@ public final class RewardOverviewVerification {
         check(info(quest(0, 1), true).getHeight() == 28, "Rewards-only quests do not duplicate their heading");
         check(info(quest(1, 0), true).getHeight() == 28, "Objectives-only quests do not add a rewards heading");
         check(info(quest(0, 0), true).getHeight() == 0, "Empty panels stay empty");
-        check(info(quest(2, 3), true).getHeight() == 164, "Multiple entries keep the section gap");
-        check(info(quest(1, 2), true).getHeight() == 108, "Multiple reward rows fit below one objective");
+        check(info(quest(2, 3), true).getHeight() == 174, "Multiple entries keep the section gap");
+        check(info(quest(1, 2), true).getHeight() == 118, "Multiple reward rows fit below one objective");
         System.out.println("Reward overview: headless checks passed; in-game selection and visuals remain to test.");
     }
 

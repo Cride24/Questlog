@@ -1,7 +1,9 @@
 package org.infernalstudios.questlog.client.gui.components.scrollable;
 
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.network.chat.Component;
 import org.infernalstudios.questlog.client.gui.components.InfoEntry;
 import org.infernalstudios.questlog.client.gui.components.ScrollableComponent;
@@ -11,14 +13,16 @@ import org.infernalstudios.questlog.core.quests.display.QuestDisplayData;
 import org.infernalstudios.questlog.core.quests.display.RewardDisplayData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.client.gui.components.events.GuiEventListener;
-import java.util.ArrayList;
-import java.util.List;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ScrollableInfo implements Scrollable, GuiEventListener {
-    private static final int REWARD_HEADING_HEIGHT = 24;
+    private static final int REWARD_HEADING_HEIGHT = 34;
+    private static final int REWARD_HEADING_TITLE_Y = 8;
+    private static final int TITLE_HEIGHT = 16;
+    private static final int HR_Y_OFFSET = -2;
     private final QuestDetails questDetails;
     private final QuestDisplayData display;
     private final boolean showRewardPreviews;
@@ -79,10 +83,16 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
             int x = this.parent != null ? (int) this.parent.getXOffset() : 0;
             int y = (this.parent != null ? (int) this.parent.getYOffset() : 0)
                     + this.display.getObjectiveDisplayData().size() * InfoEntry.INFO_ENTRY_HEIGHT;
-            int width = (this.parent != null ? this.parent.width : this.display.getRightPanelWidth() - 36) - 15;
-            ps.fill(x, y + 4, x + width, y + 5, 0xFF000000 | this.questDetails.getPalette().progressTextColor());
-            ps.drawString(Minecraft.getInstance().font, Component.translatable("questlog.info.rewards"),
-                    x, y + 10, this.questDetails.getPalette().titleColor(), false);
+            int width = this.parent != null ? this.parent.width : this.display.getRightPanelWidth() - 36;
+            Font font = Minecraft.getInstance().font;
+            Component title = Component.translatable("questlog.info.rewards");
+            int titleX = x + (width - font.width(title)) / 2;
+            int titleY = y + REWARD_HEADING_TITLE_Y + (TITLE_HEIGHT - font.lineHeight + 2) / 2;
+            int hrX = x + (width - this.questDetails.getGuiSet().panelHR.width()) / 2;
+            this.questDetails.getGuiSet().panelHR.blit(ps, hrX, y);
+            ps.drawString(font, title, titleX, titleY, this.questDetails.getPalette().titleColor(), false);
+            this.questDetails.getGuiSet().panelHR.blit(ps,
+                    hrX, y + REWARD_HEADING_TITLE_Y + TITLE_HEIGHT + HR_Y_OFFSET);
         }
         for (int i = 0; i < entries.size(); i++) {
             InfoEntry entry = entries.get(i);
@@ -109,7 +119,9 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
         for (int i = 0; i < entries.size(); i++) {
             double entryY = InfoEntry.INFO_ENTRY_HEIGHT * i;
             if (mouseY >= entryY && mouseY < entryY + InfoEntry.INFO_ENTRY_HEIGHT) {
-                return entries.get(i).handleChoiceClick();
+                if (entries.get(i).handleChoiceClick()) {
+                    return true;
+                }
             }
         }
         return false;

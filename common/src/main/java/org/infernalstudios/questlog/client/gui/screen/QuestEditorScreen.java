@@ -625,8 +625,13 @@ public class QuestEditorScreen extends Screen {
         }
 
         Button rewardPreviewToggle = Button.builder(Component.literal(this.getRewardPreviewLabel()), btn -> {
-            this.tempRewardPreviewOverride = this.tempRewardPreviewOverride == null ? true
-                    : this.tempRewardPreviewOverride ? false : null;
+            if (this.tempRewardPreviewOverride == null) {
+                this.tempRewardPreviewOverride = true;
+            } else if (this.tempRewardPreviewOverride) {
+                this.tempRewardPreviewOverride = false;
+            } else {
+                this.tempRewardPreviewOverride = null;
+            }
             btn.setMessage(Component.literal(this.getRewardPreviewLabel()));
         }).bounds(0, 0, 107, 16).build();
         rewardPreviewToggle.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.reward_preview")));
