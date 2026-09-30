@@ -289,6 +289,18 @@ If you need to manually specify the rendering bounds or use an animated vertical
 
 **Example:** `[Look at this animation!](image:questlog:textures/gui/tutorial_animation.png:16:16:8:100)`
 
+### Validating hover-image parameters
+
+Use a valid namespaced texture ID. Omitted dimensions default to 16 by 16 pixels.
+Explicit width and height must be positive integers. An animation must provide both
+`frames` and `frame_time`, also as positive integers; each frame is stacked vertically.
+Values that overflow the supported integer range, including `height * frames`, are invalid.
+
+Malformed hover-image data is ignored when hovered, keeping the quest text visible
+instead of crashing the screen. For example, `image:minecraft:textures/item/emerald.png:large:16`
+has an invalid width. Use `image:minecraft:textures/item/emerald.png:16:16` instead.
+This validation applies to inline hover images; it does not add a new badge format.
+
 ## Notification Badges
 
 When a quest triggers a notification (like when it is completed but the reward hasn't been claimed yet), a small badge appears on the Questlog open button in the inventory. By default, this uses an exclamation mark icon, but you can override it on a per-quest basis.

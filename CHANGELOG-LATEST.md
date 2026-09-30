@@ -18,3 +18,7 @@
 ## Item recipe links
 
 - Added optional EMI/JEI recipe clicks for inline item text and concrete item objectives, controlled by the client openRecipes setting.
+
+## Hover-image validation
+
+- Ignored malformed hover-image IDs/dimensions/animation parameters instead of crashing when quest text is hovered.

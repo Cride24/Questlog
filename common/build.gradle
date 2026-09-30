@@ -75,3 +75,11 @@ artifacts {
         commonResources dir
     }
 }
+tasks.register('verifyImageTooltips', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'org.infernalstudios.questlog.ImageTooltipVerification'
+    workingDir = layout.buildDirectory.dir('verification').get().asFile
+    doFirst { workingDir.mkdirs() }
+}
+tasks.named('check') { dependsOn 'verifyImageTooltips' }
