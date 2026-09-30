@@ -1,33 +1,16 @@
 ### Added
 
-- The Questlog now reopens to the last opened chapter.
-- Saved chapter scroll position when navigating back from a quest or switching chapters.
+- Added item tooltips for inline item links in quest text and for objectives with a specific item.
+- Added optional recipe clicks for those item links and objective names when EMI or JEI is installed.
+- Added optional `details` text on a separate quest page, with a matching field in the in-game editor.
+- Added optional reward previews below objectives before quest completion. Previews are off by default and can be overridden per quest.
+
+### Changed
+
+- Long quest titles and objective and reward names now wrap within their panels.
+- Moved the Collect action below the rewards panel so the quest navigation button remains available while rewards are unclaimed.
 
 ### Fixed
 
-- Fixed "Hide completed quests" and "Condensed view" display preferences resetting when reopening the Questlog.
-- Fixed misleading "Hidden" quest setting tooltip in the editor.
-- Fixed the Entity Approach objective in the editor generating a "required_amount" field instead of "range".
-- Defaulted missing "range" in Entity Approach objectives to 5 blocks to prevent broken quest errors.
-- Fixed the selection list in the quest editor where clicking the scrollbar clicked options underneath it and mouse wheel scrolling was occasionally unresponsive.
-
-## Item tooltips
-
-- Added item tooltips for inline description text and concrete item objectives; no recipe viewer is required.
-
-## Item recipe links
-
-- Added optional EMI/JEI recipe clicks for inline item text and concrete item objectives, controlled by the client openRecipes setting.
-
-## Hover-image validation
-
-- Ignored malformed hover-image IDs/dimensions/animation parameters instead of crashing when quest text is hovered.
-
-## Optional quest details and editor scrolling
-
-- Added optional quest details with a separate page and documented empty values, translation keys and editor access.
-- Fixed nested Description/Details scrolling and used Questlog scrollbar textures in the editor.
-
-## Quest text layout
-
-- Wrapped long quest titles and objective/reward labels, with status below each label.
+- Ignored malformed hover-image links instead of crashing when quest text is hovered.
+- Fixed independent scrolling for the Description and Details fields in the quest editor.
