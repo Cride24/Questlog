@@ -50,6 +50,7 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     @Nullable
     private final Screen previousScreen;
     public Component pendingTooltip = null;
+    public net.minecraft.world.item.ItemStack pendingItemTooltip = null;
     private int panel1X;
     private int panel2X;
     private int panel1Y;
@@ -265,6 +266,7 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     @Override
     public void render(@NotNull GuiGraphics ps, int mouseX, int mouseY, float partialTicks) {
         this.pendingTooltip = null;
+        this.pendingItemTooltip = null;
         super.render(ps, mouseX, mouseY, partialTicks);
         this.renderTitle(ps);
         if (this.description != null) this.description.render(ps, mouseX, mouseY, partialTicks);
@@ -274,7 +276,9 @@ public class QuestDetails extends Screen implements NarrationSupplier {
 
         this.handleMouseOverLinks(mouseX, mouseY, ps);
 
-        if (this.pendingTooltip != null && this.info != null && this.info.isMouseOver(mouseX, mouseY)) {
+        if (this.pendingItemTooltip != null && this.info != null && this.info.isMouseOver(mouseX, mouseY)) {
+            ps.renderTooltip(this.font, this.pendingItemTooltip, mouseX, mouseY);
+        } else if (this.pendingTooltip != null && this.info != null && this.info.isMouseOver(mouseX, mouseY)) {
             ps.renderTooltip(this.font, this.pendingTooltip, mouseX, mouseY);
         }
     }
@@ -330,17 +334,18 @@ public class QuestDetails extends Screen implements NarrationSupplier {
 
     private void renderHoverEffect(GuiGraphics ps, Style style, int mouseX, int mouseY) {
         HoverEvent hover = style.getHoverEvent();
-        if (hover != null && hover.getAction() == HoverEvent.Action.SHOW_TEXT) {
+        if (hover == null) return;
+        if (hover.getAction() == HoverEvent.Action.SHOW_TEXT) {
             Component hoverComponent = (Component) hover.getValue(hover.getAction());
             if (hoverComponent != null) {
                 String text = hoverComponent.getString();
                 if (text.startsWith("image:")) {
                     this.renderImageTooltip(ps, text, mouseX, mouseY);
-                } else {
-                    ps.renderComponentHoverEffect(this.font, style, mouseX, mouseY);
+                    return;
                 }
             }
         }
+        ps.renderComponentHoverEffect(this.font, style, mouseX, mouseY);
     }
 
     private void renderImageTooltip(GuiGraphics ps, String data, int mouseX, int mouseY) {

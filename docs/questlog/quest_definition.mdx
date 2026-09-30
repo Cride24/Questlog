@@ -235,6 +235,24 @@ You can create clickable text that automatically redirects to another quest.
 **Format:** `[Display Text](quest:quest_id)`
 **Example:** `[Click here to view the next quest!](quest:my_quests:next_quest)`
 
+### Item Tooltips
+
+Use inline item text to show the normal Minecraft item tooltip on hover.
+The visible label is independent of the item ID, so it can be written in any language.
+
+**Format:** `[Display Text](item:namespace:item_id)`
+**Example:** `[Wooden Axe](item:minecraft:wooden_axe)`
+
+This works in quest descriptions, including completion and failure descriptions.
+No tooltip markup is required in an objective's `name`: when its `item` property
+identifies one registered item, hovering the objective name shows that item's tooltip.
+The ID can be an item string or the `id`/`item` field of an item object.
+Tags such as `#minecraft:logs` describe several items and do not produce a single-item tooltip.
+
+Tooltips use a default stack of one item; custom item data is not included.
+An invalid or unavailable ID in inline text leaves the label readable and logs a warning.
+EMI and JEI are not required for item tooltips.
+
 ### Hover Images
 
 You can create text that displays an image when hovered over.
