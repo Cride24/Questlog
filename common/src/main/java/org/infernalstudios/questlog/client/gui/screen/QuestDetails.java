@@ -37,7 +37,7 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     private static final int PANEL_SPACING = 6;
     private static final int BUTTON_SPACING = 6;
     private static final int TITLE_Y = 13;
-        private static final int TITLE_HEIGHT = 16;
+    private static final int TITLE_HEIGHT = 16;
     private static final int CONTENT_X = 18;
     private static final int CONTENT_Y = 36;
     private static final int HR_Y_OFFSET = -2;
@@ -55,8 +55,6 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     private int panel2Y;
     @Nullable
     private QuestlogButton backButton;
-    @Nullable
-    private QuestlogButton actionButton;
     private java.util.List<net.minecraft.util.FormattedCharSequence> titleLines;
     private int titleHeight;
     @Nullable
@@ -140,7 +138,7 @@ public class QuestDetails extends Screen implements NarrationSupplier {
                 this.getPalette().textColor(),
                 this.getPalette().hoveredTextColor(),
                 Component.empty(),
-                () -> { if (this.minecraft != null) this.minecraft.setScreen(this.previousScreen); },
+                this::handlePrimaryAction,
                 this.getGuiSet()
         );
 
@@ -162,9 +160,6 @@ public class QuestDetails extends Screen implements NarrationSupplier {
             this.objectivesButton = null;
         }
 
-        this.actionButton = new QuestlogButton(0, buttonY, this.getPalette().textColor(),
-                this.getPalette().hoveredTextColor(), Component.empty(), this::handlePrimaryAction, this.getGuiSet());
-        this.addRenderableWidget(this.actionButton);
         this.updateButtonLayout(rightBoundary);
 
         this.addRenderableWidget(this.backButton);
@@ -173,41 +168,37 @@ public class QuestDetails extends Screen implements NarrationSupplier {
         }
     }
 
-    private Component getActionText() {
-        if (this.quest.isCompleted() && !this.quest.isRewarded()) {
-            return this.canClaimRewards() ? this.getDisplay().getCollectButtonText()
-                    : Component.translatable("questlog.reward.make_choices");
-        }
-        if (this.quest.isCompleted() && this.quest.isRewarded() && this.quest.isRepeatable()) {
-            return Component.translatable("questlog.reward.reset");
-        }
-        return this.needsRead() ? Component.translatable("questlog.button.read") : null;
-    }
-
-    private boolean canClaimRewards() {
-        for (Reward reward : this.quest.rewards) {
-            if (!reward.hasRewarded() && reward instanceof org.infernalstudios.questlog.core.quests.rewards.ChoiceReward choice
-                    && !choice.canClaim()) return false;
-        }
-        return true;
-    }
-
     private void updateButtonLayout(int rightBoundary) {
-        if (this.backButton == null || this.actionButton == null) return;
-        this.backButton.setMessage(this.getDisplay().getBackButtonText());
-        this.backButton.setX(rightBoundary - this.backButton.getExpectedWidth());
-        int nextRight = this.backButton.getX() - BUTTON_SPACING;
-        Component action = this.getActionText();
-        this.actionButton.visible = action != null;
-        this.actionButton.active = action != null && (!(this.quest.isCompleted() && !this.quest.isRewarded())
-                || this.canClaimRewards());
-        if (action != null) {
-            this.actionButton.setMessage(action);
-            this.actionButton.setX(nextRight - this.actionButton.getExpectedWidth());
-            nextRight = this.actionButton.getX() - BUTTON_SPACING;
+        if (this.backButton == null) return;
+        Component backText = this.getDisplay().getBackButtonText();
+
+        if (this.quest.isCompleted() && !this.quest.isRewarded()) {
+            boolean hasIncompleteChoices = false;
+            for (Reward reward : this.quest.rewards) {
+                if (!reward.hasRewarded() && reward instanceof org.infernalstudios.questlog.core.quests.rewards.ChoiceReward choiceReward && !choiceReward.canClaim()) {
+                    hasIncompleteChoices = true;
+                    break;
+                }
+            }
+            if (hasIncompleteChoices) {
+                backText = Component.translatable("questlog.reward.make_choices");
+            } else {
+                backText = this.getDisplay().getCollectButtonText();
+            }
+        } else if (this.quest.isCompleted() && this.quest.isRewarded() && this.quest.isRepeatable()) {
+            backText = Component.translatable("questlog.reward.reset");
+        } else if (this.needsRead()) {
+            backText = Component.translatable("questlog.button.read");
         }
+
+        this.backButton.setMessage(backText);
+
+        int backWidth = this.backButton.getExpectedWidth();
+        this.backButton.setX(rightBoundary - backWidth);
+
         if (this.objectivesButton != null) {
-            this.objectivesButton.setX(nextRight - this.objectivesButton.getExpectedWidth());
+            int objWidth = this.objectivesButton.getExpectedWidth();
+            this.objectivesButton.setX(this.backButton.getX() - objWidth - BUTTON_SPACING);
         }
     }
 
@@ -438,7 +429,39 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     @Override
     public void tick() {
         super.tick();
-        this.updateButtonLayout(this.panel1X + this.getDisplay().getLeftPanelWidth() - 12);
+
+        boolean isShowingCollect = this.backButton != null &&
+                (this.backButton.getMessage().getString().equals(this.getDisplay().getCollectButtonText().getString()) ||
+                        this.backButton.getMessage().getString().equals(Component.translatable("questlog.reward.make_choices").getString()));
+
+        if (isShowingCollect && this.quest.isRewarded()) {
+            this.rebuildWidgets();
+        } else if (this.backButton != null && isShowingCollect) {
+            boolean canClaim = true;
+            for (Reward reward : this.quest.rewards) {
+                if (!reward.hasRewarded() && reward instanceof org.infernalstudios.questlog.core.quests.rewards.ChoiceReward choiceReward && !choiceReward.canClaim()) {
+                    canClaim = false;
+                    break;
+                }
+            }
+            this.backButton.active = canClaim;
+            Component expectedText = canClaim ? this.getDisplay().getCollectButtonText() : Component.translatable("questlog.reward.make_choices");
+            if (!this.backButton.getMessage().getString().equals(expectedText.getString())) {
+                this.backButton.setMessage(expectedText);
+                int rightBoundary = this.panel1X + this.getDisplay().getLeftPanelWidth() + (showDetails ? this.getDisplay().getRightPanelWidth() : 0);
+                this.updateButtonLayout(rightBoundary);
+            }
+        }
+
+        if (this.backButton != null && !this.needsRead() &&
+                this.backButton.getMessage().getString().equals(Component.translatable("questlog.button.read").getString())) {
+            this.rebuildWidgets();
+        }
+
+        if (this.backButton != null && !this.quest.isCompleted() &&
+                this.backButton.getMessage().getString().equals(Component.translatable("questlog.reward.reset").getString())) {
+            this.rebuildWidgets();
+        }
     }
 
     @Override

@@ -9,16 +9,12 @@ This screen displays a list of available quests, along with their details and pr
 Players can view the details of each quest by clicking on it.
 Additionally, a button is added to the player's inventory (near the recipe book) to open the Questlog.
 
-## Long labels and navigation
+## Long labels
 
 Quest titles wrap to fit the left panel. Objective and reward names wrap to fit the right
 panel, with each row's progress/status placed below its name. Rows use the height of their
 wrapped content, so subsequent entries stay below them and the panel can scroll as needed.
 Explicit newlines in a JSON string can be written as `\n`.
-
-Back remains available alongside quest actions, including reward collection after completion.
-Players can leave the quest without collecting rewards and return later. Back itself
-does not collect rewards, select choices or reset progress.
 
 The existing per-quest `left_panel_width`, `right_panel_width`, `panel_height` and panel
 offset settings still control the layout. There is no new global panel-size setting.

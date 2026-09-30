@@ -11,6 +11,6 @@
 - Defaulted missing "range" in Entity Approach objectives to 5 blocks to prevent broken quest errors.
 - Fixed the selection list in the quest editor where clicking the scrollbar clicked options underneath it and mouse wheel scrolling was occasionally unresponsive.
 
-## Quest text layout and Back navigation
+## Quest text layout
 
-- Wrapped long quest titles and objective/reward labels, kept status below each label, and preserved Back alongside completion actions.
+- Wrapped long quest titles and objective/reward labels, with status below each label.
