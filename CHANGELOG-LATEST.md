@@ -22,3 +22,8 @@
 ## Hover-image validation
 
 - Ignored malformed hover-image IDs/dimensions/animation parameters instead of crashing when quest text is hovered.
+
+## Optional quest details and editor scrolling
+
+- Added optional quest details with a separate page and documented empty values, translation keys and editor access.
+- Fixed nested Description/Details scrolling and used Questlog scrollbar textures in the editor.

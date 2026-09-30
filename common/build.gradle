@@ -45,6 +45,7 @@ dependencies {
 
 sourceSets.main.resources.srcDir 'src/main/generated'
 
+// Exercise verification mains against mapped Minecraft classes without launching a game.
 sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
 sourceSets.test.runtimeClasspath += sourceSets.main.compileClasspath
 tasks.register('verifyRecipeLinks', JavaExec) {
@@ -56,6 +57,24 @@ tasks.register('verifyRecipeLinks', JavaExec) {
 }
 tasks.named('check') { dependsOn 'verifyRecipeLinks' }
 tasks.named('test') { failOnNoDiscoveredTests = false }
+
+tasks.register('verifyQuestDetails', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'org.infernalstudios.questlog.QuestDetailsVerification'
+    workingDir = layout.buildDirectory.dir('verification').get().asFile
+    doFirst { workingDir.mkdirs() }
+}
+tasks.named('check') { dependsOn 'verifyQuestDetails' }
+
+tasks.register('verifyEditorScrolling', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'org.infernalstudios.questlog.client.gui.screen.EditorScrollingVerification'
+    workingDir = layout.buildDirectory.dir('verification').get().asFile
+    doFirst { workingDir.mkdirs() }
+}
+tasks.named('check') { dependsOn 'verifyEditorScrolling' }
 
 configurations {
     commonJava {

@@ -33,6 +33,11 @@ These JSON files should be placed in the `quests` directory of your config (`con
   // Can be a string using inline rich text, or a JSON text component.
   "description": "string | object | array",
 
+  // Optional additional text shown on a separate Details page.
+  // Uses the same inline rich text / JSON text component formats as description.
+  // If omitted, null, empty or whitespace-only, the Details button is hidden.
+  "details": "string | object | array (optional)",
+
   // An alternative description shown only when the quest is completed.
   "description_completed": "string | object | array (optional)",
 
@@ -46,7 +51,7 @@ These JSON files should be placed in the `quests` directory of your config (`con
   // The icon to display for the quest.
   "icon": "Renderable (optional)",
 
-  // Whether the title and descriptions are translatable string keys. Defaults to false.
+  // Whether the title, descriptions and details are translatable string keys. Defaults to false.
   "translatable": false,
 
   // The chapter this quest belongs to. Defaults to "questlog:main".
@@ -73,10 +78,12 @@ These JSON files should be placed in the `quests` directory of your config (`con
   "show_popup_on_unlock": false,
 
   // --- UI CUSTOMIZATION ---
-  // Disables the details button on the quest screen, locking the panel out entirely (unless opened by default).
+  // Hides the button opening the additional Details page.
+  // Does not hide objectives or rewards in the quest overview.
   "disable_details_button": false,
 
-  // Forces the details/objectives panel to be open by default.
+  // Opens the additional Details page first if details are present.
+  // Back returns to the overview. Ignored if details are absent.
   "details_open_by_default": false,
 
   // The background texture of the main (left) panel.
@@ -340,3 +347,33 @@ You can add a `badge` object to your quest definition JSON to define a custom ba
 ```
 
 **Note for Animated Badges:** If you want the badge to animate, your `texture` image must be a vertical spritesheet where each frame is stacked on top of one another. The game will automatically read the `height` value and shift the rendering down for each frame based on the `frame_time` you set.
+
+## Optional additional details
+
+`description` is the short text on the quest overview. `details` is optional additional
+text on a separate page; it does not replace the description or change completion rules.
+It accepts the same string, inline quest-link/hover-image and JSON text component formats
+as the description. For example:
+
+```json
+{
+  "title": "Make your first tool",
+  "description": "Craft a wooden axe.",
+  "details": "Arrange three planks and two sticks in a crafting table."
+}
+```
+
+For formatted text, use a component such as `"details": {"text": "Extra instructions", "italic": true}`.
+With `translatable: true`, a string in `details` is a translation key, just like a description
+string. Supply that key in your resource pack's language files.
+
+An absent, null, empty or whitespace-only value hides the Details button. Components with
+no visible text are also treated as empty. There is no fallback that repeats `description`.
+If a details page is accessed without additional text, it shows an italic localized
+"No additional details" message.
+
+`disable_details_button` hides the button. `details_open_by_default` opens the details page
+first when additional text exists; it is ignored when no details exist. Back from the
+details page returns to the quest overview. These settings do not change the quest's objectives.
+Per-quest panel dimensions remain the existing `left_panel_width`, `right_panel_width`
+and `panel_height` settings.

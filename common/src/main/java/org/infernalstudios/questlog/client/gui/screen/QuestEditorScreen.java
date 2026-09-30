@@ -23,6 +23,8 @@ import org.infernalstudios.questlog.Questlog;
 import org.infernalstudios.questlog.QuestlogClient;
 import org.infernalstudios.questlog.client.gui.*;
 import org.infernalstudios.questlog.client.gui.components.NoShadowEditBox;
+import org.infernalstudios.questlog.client.gui.components.QuestTextEditBox;
+import org.infernalstudios.questlog.client.gui.components.EditorScrollableComponent;
 import org.infernalstudios.questlog.client.gui.components.ScrollableComponent;
 import org.infernalstudios.questlog.compat.origins.OriginsClientHelper;
 import org.infernalstudios.questlog.core.DefinitionUtil;
@@ -144,6 +146,7 @@ public class QuestEditorScreen extends Screen {
     NoShadowEditBox idBox;
     NoShadowEditBox titleBox;
     MultiLineEditBox descriptionBox;
+    MultiLineEditBox detailsBox;
     NoShadowEditBox iconBox;
     NoShadowEditBox chapterBox;
     NoShadowEditBox orderBox;
@@ -166,6 +169,7 @@ public class QuestEditorScreen extends Screen {
     private String tempId = "";
     private String tempTitle = "";
     private String tempDescription = "";
+    private String tempDetails = "";
     private String tempIconItem = "";
     private String tempChapter = "";
     private int tempSortOrder = 0;
@@ -250,6 +254,9 @@ public class QuestEditorScreen extends Screen {
     private void loadFromDefinition(JsonObject definition) {
         this.tempTitle = definition.has("title") ? definition.get("title").getAsString() : "";
         this.tempDescription = definition.has("description") ? definition.get("description").getAsString() : "";
+        JsonElement details = definition.get("details");
+        this.tempDetails = details == null || details.isJsonNull() ? ""
+                : details.isJsonPrimitive() ? details.getAsString() : details.toString();
 
         if (definition.has("icon") && definition.get("icon").isJsonObject()) {
             JsonObject iconObj = definition.getAsJsonObject("icon");
@@ -327,10 +334,15 @@ public class QuestEditorScreen extends Screen {
         this.titleBox.setValue(this.tempTitle);
         this.titleBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.title")));
 
-        this.descriptionBox = new MultiLineEditBox(this.font, baseX + 15, baseY + 86, 195, 54, Component.empty(), Component.empty());
+        this.descriptionBox = new QuestTextEditBox(this.font, baseX + 15, baseY + 86, 195, 54);
         this.descriptionBox.setCharacterLimit(Integer.MAX_VALUE);
         this.descriptionBox.setValue(this.tempDescription);
         this.descriptionBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.description")));
+
+        this.detailsBox = new QuestTextEditBox(this.font, baseX + 15, baseY + 156, 195, 54);
+        this.detailsBox.setCharacterLimit(Integer.MAX_VALUE);
+        this.detailsBox.setValue(this.tempDetails);
+        this.detailsBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.advanced.details")));
 
         this.iconBox = new NoShadowEditBox(this.font, baseX + 15, baseY + 156, 195, 16, Component.empty());
         this.iconBox.setMaxLength(128);
@@ -352,11 +364,12 @@ public class QuestEditorScreen extends Screen {
         this.leftFields.add(this.idBox);
         this.leftFields.add(this.titleBox);
         this.leftFields.add(this.descriptionBox);
+        this.leftFields.add(this.detailsBox);
         this.leftFields.add(this.iconBox);
         this.leftFields.add(this.chapterBox);
         this.leftFields.add(this.orderBox);
 
-        this.leftScrollable = new ScrollableComponent(baseX + 10, baseY + 12, 220, 170, new LeftPanelScrollable(this));
+        this.leftScrollable = new EditorScrollableComponent(baseX + 10, baseY + 12, 220, 170, new LeftPanelScrollable(this));
         this.addRenderableWidget(this.leftScrollable);
 
         if (this.rightPageState == RightPageState.LIST) {
@@ -1218,6 +1231,9 @@ public class QuestEditorScreen extends Screen {
         if (this.descriptionBox != null) {
             this.tempDescription = this.descriptionBox.getValue();
         }
+        if (this.detailsBox != null) {
+            this.tempDetails = this.detailsBox.getValue();
+        }
         if (this.iconBox != null) {
             this.tempIconItem = this.iconBox.getValue();
         }
@@ -1293,6 +1309,25 @@ public class QuestEditorScreen extends Screen {
 
         json.addProperty("title", this.tempTitle);
         json.addProperty("description", this.tempDescription);
+        String trimmed = this.tempDetails == null ? "" : this.tempDetails.trim();
+        if (trimmed.isEmpty()) {
+            json.remove("details");
+        } else {
+            JsonElement component = null;
+            if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+                try {
+                    component = JsonParser.parseString(trimmed);
+                } catch (RuntimeException ignored) {
+                    // Inline links and ordinary text are stored as strings.
+                }
+            }
+            if (component != null && (component.isJsonObject() || component.isJsonArray())) {
+                json.add("details", component);
+            } else {
+                json.addProperty("details", this.tempDetails);
+            }
+        }
+
 
         JsonObject iconObj = json.has("icon") && json.get("icon").isJsonObject() ? json.getAsJsonObject("icon") : new JsonObject();
         if (this.tempIconItem.trim().startsWith("{") && this.tempIconItem.trim().endsWith("}")) {

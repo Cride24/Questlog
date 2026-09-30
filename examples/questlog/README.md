@@ -55,3 +55,9 @@ No recipe viewer or additional objective-name markup is required.
 `quests/item_recipe_quest.json` opens wooden axe recipes from the description label
 or the objective name. Install EMI or JEI to try it; without either, clicks have no action.
 `itemLinks.openRecipes` in the client config can disable these clicks.
+
+### Optional details example
+
+`quests/optional_details_quest.json` keeps a short description on the overview and extra
+instructions on the Details page. Omit or clear `details` to hide its button.
+The in-game editor places Details below Description; both fields have independent scrolling.
