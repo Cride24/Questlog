@@ -66,13 +66,16 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
     }
 
     private int getEntryY(int index) {
-        return InfoEntry.INFO_ENTRY_HEIGHT * index
-                + (index >= this.display.getObjectiveDisplayData().size() && this.hasRewardHeading() ? REWARD_HEADING_HEIGHT : 0);
+        int y = index >= this.display.getObjectiveDisplayData().size() && this.hasRewardHeading()
+                ? REWARD_HEADING_HEIGHT : 0;
+        List<InfoEntry> entries = this.getEntries();
+        for (int i = 0; i < index; i++) y += entries.get(i).getHeight();
+        return y;
     }
 
     @Override
     public int getHeight() {
-        return this.getEntries().size() * InfoEntry.INFO_ENTRY_HEIGHT
+        return this.getEntries().stream().mapToInt(InfoEntry::getHeight).sum()
                 + (this.hasRewardHeading() ? REWARD_HEADING_HEIGHT : 0);
     }
 
@@ -81,8 +84,10 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
         List<InfoEntry> entries = this.getEntries();
         if (this.hasRewardHeading()) {
             int x = this.parent != null ? (int) this.parent.getXOffset() : 0;
-            int y = (this.parent != null ? (int) this.parent.getYOffset() : 0)
-                    + this.display.getObjectiveDisplayData().size() * InfoEntry.INFO_ENTRY_HEIGHT;
+            int y = (this.parent != null ? (int) this.parent.getYOffset() : 0);
+            for (int i = 0; i < this.display.getObjectiveDisplayData().size(); i++) {
+                y += entries.get(i).getHeight();
+            }
             int width = this.parent != null ? this.parent.width : this.display.getRightPanelWidth() - 36;
             Font font = Minecraft.getInstance().font;
             Component title = Component.translatable("questlog.info.rewards");
@@ -117,15 +122,16 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
         List<InfoEntry> entries = this.getEntries();
         for (int i = 0; i < entries.size(); i++) {
             double entryY = this.getEntryY(i);
-            if (mouseY >= entryY && mouseY < entryY + InfoEntry.INFO_ENTRY_HEIGHT) {
+            InfoEntry entry = entries.get(i);
+            if (mouseY >= entryY && mouseY < entryY + entry.getHeight()) {
                 if (!this.questDetails.quest.isCompleted()) {
                     int width = (this.parent != null ? this.parent.width : this.display.getRightPanelWidth() - 36) - 15;
                     return i < this.display.getObjectiveDisplayData().size()
                             && mouseX >= 0 && mouseX < width
-                            && mouseY - entryY >= 2 && mouseY - entryY < 11
-                            && entries.get(i).handleObjectiveItemClick();
+                            && mouseY - entryY >= 2 && mouseY - entryY < 2 + entry.getNameHeight()
+                            && entry.handleObjectiveItemClick();
                 }
-                return !this.questDetails.quest.isRewarded() && entries.get(i).handleChoiceClick();
+                return !this.questDetails.quest.isRewarded() && entry.handleChoiceClick();
             }
         }
         return false;

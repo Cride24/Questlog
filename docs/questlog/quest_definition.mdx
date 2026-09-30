@@ -381,3 +381,10 @@ first when additional text exists; it is ignored when no details exist. Back fro
 details page returns to the quest overview. These settings do not change the quest's objectives.
 Per-quest panel dimensions remain the existing `left_panel_width`, `right_panel_width`
 and `panel_height` settings.
+
+## Labels and panel dimensions
+
+Long titles, objective names and reward names wrap within their respective panel widths.
+For an explicit line break, use `\n` in a JSON string, for example
+`"name": "Craft:\nWooden Axe"`. The status appears below the wrapped name.
+Existing panel dimension/offset properties continue to apply to each quest.

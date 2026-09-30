@@ -56,3 +56,13 @@ A quest can override this default with `show_rewards_before_completion` in its
 JSON definition: `true` shows the preview, `false` hides it, and omitting the
 field uses the client setting. The quest editor's **Rewards: Default / Show /
 Hide** control uses the same three choices.
+
+## Long labels
+
+Quest titles wrap to fit the left panel. Objective and reward names wrap to fit the right
+panel, with each row's progress/status placed below its name. Rows use the height of their
+wrapped content, so subsequent entries stay below them and the panel can scroll as needed.
+Explicit newlines in a JSON string can be written as `\n`.
+
+The existing per-quest `left_panel_width`, `right_panel_width`, `panel_height` and panel
+offset settings still control the layout. There is no new global panel-size setting.

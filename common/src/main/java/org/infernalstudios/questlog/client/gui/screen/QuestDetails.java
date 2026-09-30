@@ -39,7 +39,6 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     private static final int PANEL_SPACING = 6;
     private static final int BUTTON_SPACING = 6;
     private static final int TITLE_Y = 13;
-    private static final int TITLE_WIDTH = 132;
     private static final int TITLE_HEIGHT = 16;
     private static final int CONTENT_X = 18;
     private static final int CONTENT_Y = 36;
@@ -61,6 +60,8 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     private int panel2Y;
     @Nullable
     private QuestlogButton backButton;
+    private java.util.List<net.minecraft.util.FormattedCharSequence> titleLines;
+    private int titleHeight;
     @Nullable
     private QuestlogButton objectivesButton;
     @Nullable
@@ -132,6 +133,9 @@ public class QuestDetails extends Screen implements NarrationSupplier {
         this.panel2X = baseX + leftWidth + PANEL_SPACING + this.getDisplay().getRightPanelXOffset();
         this.panel2Y = baseY + this.getDisplay().getRightPanelYOffset();
 
+        int iconWidth = this.getDisplay().getIcon() != null ? this.getDisplay().getIcon().width() + 4 : 0;
+        this.titleLines = this.font.split(this.getDisplay().getTitle(), Math.max(1, leftWidth - 36 - iconWidth));
+        this.titleHeight = Math.max(TITLE_HEIGHT, this.titleLines.size() * this.font.lineHeight + 4);
         this.setupButtons();
         this.setupContent();
     }
@@ -261,9 +265,9 @@ public class QuestDetails extends Screen implements NarrationSupplier {
 
         this.description = new ScrollableComponent(
                 this.panel1X + CONTENT_X,
-                this.panel1Y + CONTENT_Y,
+                this.panel1Y + TITLE_Y + this.titleHeight + 7,
                 leftWidth - 38,
-                height - 68,
+                Math.max(1, height - 68 - (this.titleHeight - TITLE_HEIGHT)),
                 new ScrollableText(this.minecraft.font, this.detailsPage ? this.getDisplay().getDetails()
                         : this.getDisplay().getDescription(this.quest), this.getPalette().textColor())
         );
@@ -421,24 +425,19 @@ public class QuestDetails extends Screen implements NarrationSupplier {
 
     private void renderTitle(GuiGraphics ps) {
         QuestDisplayData display = this.getDisplay();
-        int leftWidth = display.getLeftPanelWidth();
-
-        int titleAreaX = (leftWidth - TITLE_WIDTH) / 2;
         int iconWidth = display.getIcon() != null ? display.getIcon().width() + 4 : 0;
-        float totalTitleWidth = this.font.width(display.getTitle()) + iconWidth;
-
-        float x = this.panel1X + titleAreaX + (TITLE_WIDTH - totalTitleWidth) / 2;
-        float y = this.panel1Y + TITLE_Y;
-
+        int textWidth = this.titleLines.stream().mapToInt(this.font::width).max().orElse(0);
+        int x = this.panel1X + (display.getLeftPanelWidth() - textWidth - iconWidth) / 2;
         if (display.getIcon() != null) {
-            display.getIcon().blit(ps, (int) x, this.panel1Y + TITLE_Y);
-            x += iconWidth;
+            display.getIcon().blit(ps, x, this.panel1Y + TITLE_Y);
         }
-
-        y += (float) (TITLE_HEIGHT - this.font.lineHeight + 2) / 2;
-        ps.drawString(font, display.getTitle(), (int) x, (int) y, this.getPalette().titleColor(), false);
-
-        this.getGuiSet().smallHR.blit(ps, this.panel1X + titleAreaX - 60, this.panel1Y + TITLE_Y + TITLE_HEIGHT + HR_Y_OFFSET);
+        int y = this.panel1Y + TITLE_Y + 4;
+        for (net.minecraft.util.FormattedCharSequence line : this.titleLines) {
+            ps.drawString(this.font, line, x + iconWidth, y, this.getPalette().titleColor(), false);
+            y += this.font.lineHeight;
+        }
+        this.getGuiSet().smallHR.blit(ps, this.panel1X + (display.getLeftPanelWidth() - 132) / 2 - 60,
+                this.panel1Y + TITLE_Y + this.titleHeight + HR_Y_OFFSET);
     }
 
     private void renderInfo(GuiGraphics ps, int mouseX, int mouseY, float partialTicks) {
