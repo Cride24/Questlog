@@ -14,3 +14,7 @@
 ## Item tooltips
 
 - Added item tooltips for inline description text and concrete item objectives; no recipe viewer is required.
+
+## Item recipe links
+
+- Added optional EMI/JEI recipe clicks for inline item text and concrete item objectives, controlled by the client openRecipes setting.

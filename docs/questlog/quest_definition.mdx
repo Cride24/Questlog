@@ -235,23 +235,39 @@ You can create clickable text that automatically redirects to another quest.
 **Format:** `[Display Text](quest:quest_id)`
 **Example:** `[Click here to view the next quest!](quest:my_quests:next_quest)`
 
-### Item Tooltips
+### Item Tooltips and Recipe Links
 
-Use inline item text to show the normal Minecraft item tooltip on hover.
-The visible label is independent of the item ID, so it can be written in any language.
+Use inline item text to show the normal Minecraft item tooltip on hover and,
+when a recipe viewer is installed, open recipes on click. The visible label is
+independent of the item ID, so it can be written in any language.
 
 **Format:** `[Display Text](item:namespace:item_id)`
 **Example:** `[Wooden Axe](item:minecraft:wooden_axe)`
 
 This works in quest descriptions, including completion and failure descriptions.
-No tooltip markup is required in an objective's `name`: when its `item` property
-identifies one registered item, hovering the objective name shows that item's tooltip.
+No additional markup is required in an objective's `name`: when its `item` property
+identifies one registered item, hovering the objective name shows that item's tooltip
+and clicking it can open recipes.
 The ID can be an item string or the `id`/`item` field of an item object.
-Tags such as `#minecraft:logs` describe several items and do not produce a single-item tooltip.
+Tags such as `#minecraft:logs` describe several items and do not produce a
+single-item tooltip or recipe target.
 
 Tooltips use a default stack of one item; custom item data is not included.
 An invalid or unavailable ID in inline text leaves the label readable and logs a warning.
-EMI and JEI are not required for item tooltips.
+
+EMI is used when installed; otherwise JEI is used. If both are installed, EMI takes priority.
+Neither viewer is a required dependency: tooltips work without either, and
+clicking has no action.
+
+Recipe clicks are enabled by default. Disable them in Questlog's config screen,
+or set the following in `config/questlog-client.toml`:
+
+```toml
+[itemLinks]
+openRecipes = false
+```
+
+This setting applies to both description links and objective names.
 
 ### Hover Images
 
