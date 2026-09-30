@@ -71,6 +71,7 @@ public class QuestEditorScreen extends Screen {
     private static final ResourceLocation TAB_SETTINGS_TEXTURE = ResourceLocation.fromNamespaceAndPath(Questlog.MODID, "textures/gui/editor_tab_settings.png");
     private static final ResourceLocation TAB_SETTINGS_SELECTED = ResourceLocation.fromNamespaceAndPath(Questlog.MODID, "textures/gui/editor_tab_settings_selected.png");
     private static final ResourceLocation TAB_SETTINGS_HIGHLIGHTED = ResourceLocation.fromNamespaceAndPath(Questlog.MODID, "textures/gui/editor_tab_settings_highlighted.png");
+    private static final String REWARD_PREVIEW_KEY = "show_rewards_before_completion";
     private static final List<BoolFieldDef> BOOL_FIELDS = List.of(
             new BoolFieldDef("hidden", false, "Hidden", "questlog.editor.tooltip.hidden"),
             new BoolFieldDef("hide_when_completed", false, "Hide When Completed", "questlog.editor.tooltip.hide_when_completed"),
@@ -131,6 +132,8 @@ public class QuestEditorScreen extends Screen {
     private final Stack<NestingFrame> nestingStack = new Stack<>();
     private final AutocompleteHelper autocompleteHelper = new AutocompleteHelper();
     private final Map<String, Boolean> tempBooleans = new LinkedHashMap<>();
+    @Nullable
+    private Boolean tempRewardPreviewOverride;
     private final Map<String, String> tempTexts = new LinkedHashMap<>();
     public Component pendingTooltip = null;
     @Nullable
@@ -210,6 +213,7 @@ public class QuestEditorScreen extends Screen {
     }
 
     private void loadQuestData() {
+        this.tempRewardPreviewOverride = null;
         for (BoolFieldDef def : BOOL_FIELDS) {
             this.tempBooleans.put(def.key(), getBoolDefault(def));
         }
@@ -275,6 +279,8 @@ public class QuestEditorScreen extends Screen {
             boolean defaultVal = getBoolDefault(def);
             this.tempBooleans.put(def.key(), definition.has(def.key()) ? definition.get(def.key()).getAsBoolean() : defaultVal);
         }
+        this.tempRewardPreviewOverride = definition.has(REWARD_PREVIEW_KEY)
+                ? JsonUtils.getBoolean(definition, REWARD_PREVIEW_KEY) : null;
         for (TextFieldDef def : TEXT_FIELDS) {
             if (definition.has(def.key()) && !definition.get(def.key()).isJsonNull()) {
                 JsonElement el = definition.get(def.key());
@@ -605,6 +611,11 @@ public class QuestEditorScreen extends Screen {
         }
     }
 
+    private String getRewardPreviewLabel() {
+        if (this.tempRewardPreviewOverride == null) return "Rewards: Default";
+        return this.tempRewardPreviewOverride ? "Rewards: Show" : "Rewards: Hide";
+    }
+
     private void buildSettingsPanel(int panel2X, int panel2Y) {
         this.settingsFields.clear();
         this.settingsLabels.clear();
@@ -625,6 +636,21 @@ public class QuestEditorScreen extends Screen {
             this.settingsLabels.add(null);
             this.settingsRowHeights.add(18);
         }
+
+        Button rewardPreviewToggle = Button.builder(Component.literal(this.getRewardPreviewLabel()), btn -> {
+            if (this.tempRewardPreviewOverride == null) {
+                this.tempRewardPreviewOverride = true;
+            } else if (this.tempRewardPreviewOverride) {
+                this.tempRewardPreviewOverride = false;
+            } else {
+                this.tempRewardPreviewOverride = null;
+            }
+            btn.setMessage(Component.literal(this.getRewardPreviewLabel()));
+        }).bounds(0, 0, 107, 16).build();
+        rewardPreviewToggle.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.reward_preview")));
+        this.settingsFields.add(rewardPreviewToggle);
+        this.settingsLabels.add(null);
+        this.settingsRowHeights.add(18);
 
         for (TextFieldDef def : TEXT_FIELDS) {
             if (def.longText()) {
@@ -1258,7 +1284,7 @@ public class QuestEditorScreen extends Screen {
         }
 
         for (int i = 0; i < TEXT_FIELDS.size(); i++) {
-            int widgetIndex = BOOL_FIELDS.size() + i;
+            int widgetIndex = BOOL_FIELDS.size() + 1 + i;
             if (widgetIndex >= this.settingsFields.size()) continue;
             net.minecraft.client.gui.components.AbstractWidget widget = this.settingsFields.get(widgetIndex);
             if (widget instanceof NoShadowEditBox box) {
@@ -1349,6 +1375,11 @@ public class QuestEditorScreen extends Screen {
         for (BoolFieldDef def : BOOL_FIELDS) {
             boolean defaultVal = getBoolDefault(def);
             setBooleanFlag(json, def.key(), this.tempBooleans.getOrDefault(def.key(), defaultVal), defaultVal);
+        }
+        if (this.tempRewardPreviewOverride == null) {
+            json.remove(REWARD_PREVIEW_KEY);
+        } else {
+            json.addProperty(REWARD_PREVIEW_KEY, this.tempRewardPreviewOverride);
         }
         for (TextFieldDef def : TEXT_FIELDS) {
             String value = this.tempTexts.getOrDefault(def.key(), def.defaultValue());

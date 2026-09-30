@@ -146,6 +146,8 @@
     "text.autoconfig.questlog-client.option.preferences.hideCompleted.@Tooltip": "Hides completed quests in the quest log",
     "text.autoconfig.questlog-client.option.preferences.descriptionsCondensed": "Condensed View",
     "text.autoconfig.questlog-client.option.preferences.descriptionsCondensed.@Tooltip": "Shows condensed quest entries in the quest log",
+    "text.autoconfig.questlog-client.option.preferences.showRewardPreviews": "Show Reward Previews",
+    "text.autoconfig.questlog-client.option.preferences.showRewardPreviews.@Tooltip": "Show quest rewards before completion. Disabled by default to preserve existing quest presentation",
 
     "text.autoconfig.questlog-client.category.itemLinks": "Item Links",
     "text.autoconfig.questlog-client.option.itemLinks.openRecipes": "Open Item Recipes",
@@ -210,6 +212,7 @@
     "questlog.editor.tooltip.include_in_main": "If enabled, the quest will be shown in the main chapter list in addition to its assigned chapter.",
     "questlog.editor.tooltip.details_default": "If enabled and additional details exist, opening this quest shows its Details page first. Back returns to the quest overview.",
     "questlog.editor.tooltip.details_disabled": "Hides the Details button. Objectives and rewards remain visible in the quest overview.",
+    "questlog.editor.tooltip.reward_preview": "Default uses the client config. Show or Hide overrides it for this quest.",
     "questlog.editor.tooltip.repeatable": "If enabled, this quest can be reset and recompleted infinitely after completion.",
     "questlog.editor.tooltip.global": "If enabled, completing this quest will complete it for all players on the server.",
     "questlog.editor.tooltip.entry_name": "A custom display name for this specific objective or reward (optional).",

@@ -76,6 +76,15 @@ tasks.register('verifyEditorScrolling', JavaExec) {
 }
 tasks.named('check') { dependsOn 'verifyEditorScrolling' }
 
+tasks.register('verifyRewardOverview', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'org.infernalstudios.questlog.RewardOverviewVerification'
+    workingDir = layout.buildDirectory.dir('verification').get().asFile
+    doFirst { workingDir.mkdirs() }
+}
+tasks.named('check') { dependsOn 'verifyRewardOverview' }
+
 configurations {
     commonJava {
         canBeResolved = false

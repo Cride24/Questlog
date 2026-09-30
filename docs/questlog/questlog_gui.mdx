@@ -42,3 +42,17 @@ when loading and saving through the field.
 
 Edit mode can show quests whose prerequisites are not yet satisfied. After leaving
 edit mode, those quests are hidden until the prerequisites are met; saving has not deleted them.
+
+## Optional reward previews
+
+Set `showRewardPreviews = true` in the `[preferences]` section of
+`config/questlog-client.toml` (or enable **Show Reward Previews** in the client
+config screen) to list rewards below objectives before completing a quest.
+The setting is off by default so existing quest presentations keep their
+current behavior. Previewed rewards cannot be selected or collected early.
+Once a quest is complete, its right panel shows rewards as usual.
+
+A quest can override this default with `show_rewards_before_completion` in its
+JSON definition: `true` shows the preview, `false` hides it, and omitting the
+field uses the client setting. The quest editor's **Rewards: Default / Show /
+Hide** control uses the same three choices.

@@ -49,6 +49,8 @@ public class QuestDisplayData {
 
     private final boolean disableDetailsButton;
     private final boolean detailsOpenByDefault;
+    @Nullable
+    private final Boolean rewardPreviewOverride;
 
     private final ResourceLocation bgTexture;
     private final ResourceLocation rightPanelTexture;
@@ -177,6 +179,8 @@ public class QuestDisplayData {
 
         this.disableDetailsButton = JsonUtils.getOrDefault(data, "disable_details_button", false);
         this.detailsOpenByDefault = JsonUtils.getOrDefault(data, "details_open_by_default", false);
+        this.rewardPreviewOverride = data.has("show_rewards_before_completion")
+                ? JsonUtils.getBoolean(data, "show_rewards_before_completion") : null;
 
         this.leftPanelXOffset = JsonUtils.getOrDefault(data, "left_panel_x_offset", 0);
         this.leftPanelYOffset = JsonUtils.getOrDefault(data, "left_panel_y_offset", 0);
@@ -414,6 +418,10 @@ public class QuestDisplayData {
 
     public boolean isDetailsOpenByDefault() {
         return this.detailsOpenByDefault;
+    }
+
+    public boolean shouldShowRewardPreviews(boolean clientDefault) {
+        return this.rewardPreviewOverride != null ? this.rewardPreviewOverride : clientDefault;
     }
 
     public QuestlogGuiSet getGuiSet() {

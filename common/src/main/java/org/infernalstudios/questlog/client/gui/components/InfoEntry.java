@@ -87,7 +87,8 @@ public class InfoEntry implements Renderable, GuiEventListener {
     }
 
     private void drawRewardStatus(GuiGraphics ps, int textX) {
-        if (rewardData.getReward() != null && rewardData.getReward().getContainer() != null) {
+        if (!this.questDetails.quest.isCompleted()
+                || rewardData.getReward() != null && rewardData.getReward().getContainer() != null) {
             return;
         }
         Component status = rewardData.hasRewarded() ?

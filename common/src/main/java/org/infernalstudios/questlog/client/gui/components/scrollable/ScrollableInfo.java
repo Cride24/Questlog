@@ -1,6 +1,10 @@
 package org.infernalstudios.questlog.client.gui.components.scrollable;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.network.chat.Component;
 import org.infernalstudios.questlog.client.gui.components.InfoEntry;
 import org.infernalstudios.questlog.client.gui.components.ScrollableComponent;
 import org.infernalstudios.questlog.client.gui.screen.QuestDetails;
@@ -9,58 +13,91 @@ import org.infernalstudios.questlog.core.quests.display.QuestDisplayData;
 import org.infernalstudios.questlog.core.quests.display.RewardDisplayData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.glfw.GLFW;
 
-import net.minecraft.client.gui.components.events.GuiEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ScrollableInfo implements Scrollable, GuiEventListener {
+    private static final int REWARD_HEADING_HEIGHT = 34;
+    private static final int REWARD_HEADING_TITLE_Y = 8;
+    private static final int TITLE_HEIGHT = 16;
+    private static final int HR_Y_OFFSET = -2;
     private final QuestDetails questDetails;
     private final QuestDisplayData display;
-    private List<InfoEntry> rewards;
-    private List<InfoEntry> objectives;
+    private final boolean showRewardPreviews;
+    private List<InfoEntry> entries;
+    private boolean entriesCompleted;
     @Nullable
     private ScrollableComponent parent = null;
 
-    public ScrollableInfo(QuestDetails questDetails, QuestDisplayData display) {
+    public ScrollableInfo(QuestDetails questDetails, QuestDisplayData display, boolean showRewardPreviews) {
         this.questDetails = questDetails;
         this.display = display;
+        this.showRewardPreviews = showRewardPreviews;
+    }
+
+    private boolean isPreviewing() {
+        return this.showRewardPreviews && !this.questDetails.quest.isCompleted();
     }
 
     private List<InfoEntry> getEntries() {
-        if (questDetails.quest.isCompleted()) {
-            if (this.rewards == null) {
-                this.rewards = new ArrayList<>();
-                List<RewardDisplayData> data = questDetails.getDisplay().getRewardDisplayData();
-                for (RewardDisplayData datum : data) {
-                    this.rewards.add(new InfoEntry(this.questDetails, datum, 0, 0, display));
+        boolean completed = this.questDetails.quest.isCompleted();
+        if (this.entries == null || this.entriesCompleted != completed) {
+            this.entries = new ArrayList<>();
+            if (!completed) {
+                for (ObjectiveDisplayData datum : this.display.getObjectiveDisplayData()) {
+                    this.entries.add(new InfoEntry(this.questDetails, datum, 0, 0));
                 }
             }
-            return this.rewards;
-        } else {
-            if (this.objectives == null) {
-                this.objectives = new ArrayList<>();
-                List<ObjectiveDisplayData> data = questDetails.getDisplay().getObjectiveDisplayData();
-                for (ObjectiveDisplayData datum : data) {
-                    this.objectives.add(new InfoEntry(this.questDetails, datum, 0, 0));
+            if (completed || this.showRewardPreviews) {
+                for (RewardDisplayData datum : this.display.getRewardDisplayData()) {
+                    this.entries.add(new InfoEntry(this.questDetails, datum, 0, 0, display));
                 }
             }
-            return this.objectives;
+            this.entriesCompleted = completed;
         }
+        return this.entries;
+    }
+
+    private boolean hasRewardHeading() {
+        return this.isPreviewing() && !this.display.getObjectiveDisplayData().isEmpty()
+                && !this.display.getRewardDisplayData().isEmpty();
+    }
+
+    private int getEntryY(int index) {
+        return InfoEntry.INFO_ENTRY_HEIGHT * index
+                + (index >= this.display.getObjectiveDisplayData().size() && this.hasRewardHeading() ? REWARD_HEADING_HEIGHT : 0);
     }
 
     @Override
     public int getHeight() {
-        return this.getEntries().size() * InfoEntry.INFO_ENTRY_HEIGHT;
+        return this.getEntries().size() * InfoEntry.INFO_ENTRY_HEIGHT
+                + (this.hasRewardHeading() ? REWARD_HEADING_HEIGHT : 0);
     }
 
     @Override
     public void render(@NotNull GuiGraphics ps, int mouseX, int mouseY, float partialTicks) {
         List<InfoEntry> entries = this.getEntries();
+        if (this.hasRewardHeading()) {
+            int x = this.parent != null ? (int) this.parent.getXOffset() : 0;
+            int y = (this.parent != null ? (int) this.parent.getYOffset() : 0)
+                    + this.display.getObjectiveDisplayData().size() * InfoEntry.INFO_ENTRY_HEIGHT;
+            int width = this.parent != null ? this.parent.width : this.display.getRightPanelWidth() - 36;
+            Font font = Minecraft.getInstance().font;
+            Component title = Component.translatable("questlog.info.rewards");
+            int titleX = x + (width - font.width(title)) / 2;
+            int titleY = y + REWARD_HEADING_TITLE_Y + (TITLE_HEIGHT - font.lineHeight + 2) / 2;
+            int hrX = x + (width - this.questDetails.getGuiSet().panelHR.width()) / 2;
+            this.questDetails.getGuiSet().panelHR.blit(ps, hrX, y);
+            ps.drawString(font, title, titleX, titleY, this.questDetails.getPalette().titleColor(), false);
+            this.questDetails.getGuiSet().panelHR.blit(ps,
+                    hrX, y + REWARD_HEADING_TITLE_Y + TITLE_HEIGHT + HR_Y_OFFSET);
+        }
         for (int i = 0; i < entries.size(); i++) {
             InfoEntry entry = entries.get(i);
             entry.x = this.parent != null ? (int) this.parent.getXOffset() : 0;
-            entry.y = this.parent != null ? (int) this.parent.getYOffset() + InfoEntry.INFO_ENTRY_HEIGHT * i : 0;
+            entry.y = (this.parent != null ? (int) this.parent.getYOffset() : 0) + this.getEntryY(i);
 
             int absMouseX = this.parent != null ? mouseX + (int) this.parent.getXOffset() : mouseX;
             int absMouseY = this.parent != null ? mouseY + (int) this.parent.getYOffset() : mouseY;
@@ -76,24 +113,19 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button != org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_1) return false;
-        if (!questDetails.quest.isCompleted()) {
-            List<InfoEntry> entries = this.getEntries();
-            int index = (int) (mouseY / InfoEntry.INFO_ENTRY_HEIGHT);
-            int width = (this.parent != null ? this.parent.width : this.display.getRightPanelWidth() - 36) - 15;
-            return mouseY >= 0 && mouseY % InfoEntry.INFO_ENTRY_HEIGHT >= 2
-                    && mouseY % InfoEntry.INFO_ENTRY_HEIGHT < 11 && mouseX >= 0 && mouseX < width
-                    && index < entries.size() && entries.get(index).handleObjectiveItemClick();
-        }
-        if (questDetails.quest.isRewarded()) return false;
+        if (button != GLFW.GLFW_MOUSE_BUTTON_1 || mouseY < 0) return false;
         List<InfoEntry> entries = this.getEntries();
         for (int i = 0; i < entries.size(); i++) {
-            double entryY = InfoEntry.INFO_ENTRY_HEIGHT * i;
+            double entryY = this.getEntryY(i);
             if (mouseY >= entryY && mouseY < entryY + InfoEntry.INFO_ENTRY_HEIGHT) {
-                InfoEntry entry = entries.get(i);
-                if (entry.handleChoiceClick()) {
-                    return true;
+                if (!this.questDetails.quest.isCompleted()) {
+                    int width = (this.parent != null ? this.parent.width : this.display.getRightPanelWidth() - 36) - 15;
+                    return i < this.display.getObjectiveDisplayData().size()
+                            && mouseX >= 0 && mouseX < width
+                            && mouseY - entryY >= 2 && mouseY - entryY < 11
+                            && entries.get(i).handleObjectiveItemClick();
                 }
+                return !this.questDetails.quest.isRewarded() && entries.get(i).handleChoiceClick();
             }
         }
         return false;
