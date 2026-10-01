@@ -336,7 +336,8 @@ public class QuestEditorScreen extends Screen {
         this.idBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.id")));
 
         this.titleBox = new NoShadowEditBox(this.font, baseX + 15, baseY + 54, 195, 16, Component.empty());
-        this.titleBox.setMaxLength(64);
+        // Preserve older titles while limiting newly typed titles to about two default-width lines.
+        this.titleBox.setMaxLength(Math.max(50, this.tempTitle.length()));
         this.titleBox.setValue(this.tempTitle);
         this.titleBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.title")));
 

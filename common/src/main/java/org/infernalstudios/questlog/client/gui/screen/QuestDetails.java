@@ -43,6 +43,8 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     private static final int CONTENT_X = 18;
     private static final int CONTENT_Y = 36;
     private static final int HR_Y_OFFSET = -2;
+    private static final int MAX_TITLE_CHARACTERS = 50;
+    private static final int MAX_TITLE_LINES = 2;
 
     private final boolean detailsPage;
     private boolean showInfo;
@@ -136,7 +138,19 @@ public class QuestDetails extends Screen implements NarrationSupplier {
         this.panel2Y = baseY + this.getDisplay().getRightPanelYOffset();
 
         int iconWidth = this.getDisplay().getIcon() != null ? this.getDisplay().getIcon().width() + 4 : 0;
-        this.titleLines = this.font.split(this.getDisplay().getTitle(), Math.max(1, leftWidth - 36 - iconWidth));
+        int titleWidth = Math.max(1, leftWidth - 36 - iconWidth);
+        String fullTitle = this.getDisplay().getTitle().getString();
+        int codePoints = fullTitle.codePointCount(0, fullTitle.length());
+        boolean shortened = codePoints > MAX_TITLE_CHARACTERS;
+        String visibleTitle = shortened
+                ? fullTitle.substring(0, fullTitle.offsetByCodePoints(0, MAX_TITLE_CHARACTERS))
+                : fullTitle;
+        this.titleLines = this.font.split(Component.literal(visibleTitle + (shortened ? "…" : "")), titleWidth);
+        while (this.titleLines.size() > MAX_TITLE_LINES && !visibleTitle.isEmpty()) {
+            visibleTitle = visibleTitle.substring(0, visibleTitle.offsetByCodePoints(0,
+                    visibleTitle.codePointCount(0, visibleTitle.length()) - 1));
+            this.titleLines = this.font.split(Component.literal(visibleTitle + "…"), titleWidth);
+        }
         this.titleHeight = Math.max(TITLE_HEIGHT, this.titleLines.size() * this.font.lineHeight + 4);
         this.setupButtons();
         this.setupContent();
@@ -302,9 +316,9 @@ public class QuestDetails extends Screen implements NarrationSupplier {
         if (this.showInfo) {
             this.info = new ScrollableComponent(
                     this.panel2X + CONTENT_X,
-                    this.panel2Y + CONTENT_Y,
+                    this.panel2Y + TITLE_Y,
                     rightWidth - 36,
-                    height - 68,
+                    height - 68 + CONTENT_Y - TITLE_Y,
                     new ScrollableInfo(this, this.getDisplay(), this.showRewardPreviews())
             );
 
@@ -389,6 +403,9 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     private void renderHoverEffect(GuiGraphics ps, Style style, int mouseX, int mouseY) {
         HoverEvent hover = style.getHoverEvent();
         if (hover == null) return;
+        if (hover.getAction() == HoverEvent.Action.SHOW_ITEM
+                && Questlog.getConfig().itemLinks != null
+                && !Questlog.getConfig().itemLinks.showTooltips) return;
         if (hover.getAction() == HoverEvent.Action.SHOW_TEXT) {
             Component hoverComponent = (Component) hover.getValue(hover.getAction());
             if (hoverComponent != null) {
@@ -466,22 +483,7 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     }
 
     private void renderInfo(GuiGraphics ps, int mouseX, int mouseY, float partialTicks) {
-        if (this.info == null) return;
-
-        int rightWidth = this.getDisplay().getRightPanelWidth();
-
-        Component title = this.quest.isCompleted()
-                || (this.showRewardPreviews() && this.getDisplay().getObjectiveDisplayData().isEmpty())
-                ? Component.translatable("questlog.info.rewards")
-                : Component.translatable("questlog.info.objectives");
-
-        float x = this.panel2X + (rightWidth - this.font.width(title)) / 2f;
-        float y = this.panel2Y + TITLE_Y + (float) (TITLE_HEIGHT - this.font.lineHeight + 2) / 2;
-
-        ps.drawString(font, title, (int) x, (int) y, this.getPalette().titleColor(), false);
-        this.getGuiSet().panelHR.blit(ps, this.panel2X + (rightWidth - 140) / 2, this.panel2Y + TITLE_Y + TITLE_HEIGHT + HR_Y_OFFSET);
-
-        this.info.render(ps, mouseX, mouseY, partialTicks);
+        if (this.info != null) this.info.render(ps, mouseX, mouseY, partialTicks);
     }
 
     private boolean showRewardPreviews() {

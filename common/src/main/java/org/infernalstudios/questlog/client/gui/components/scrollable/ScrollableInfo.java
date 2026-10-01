@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ScrollableInfo implements Scrollable, GuiEventListener {
+    private static final int TOP_HEADING_HEIGHT = 23;
     private static final int REWARD_HEADING_HEIGHT = 34;
     private static final int REWARD_HEADING_TITLE_Y = 8;
     private static final int TITLE_HEIGHT = 16;
@@ -66,8 +67,9 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
     }
 
     private int getEntryY(int index) {
-        int y = index >= this.display.getObjectiveDisplayData().size() && this.hasRewardHeading()
-                ? REWARD_HEADING_HEIGHT : 0;
+        int y = TOP_HEADING_HEIGHT;
+        if (index >= this.display.getObjectiveDisplayData().size() && this.hasRewardHeading())
+            y += REWARD_HEADING_HEIGHT;
         List<InfoEntry> entries = this.getEntries();
         for (int i = 0; i < index; i++) y += entries.get(i).getHeight();
         return y;
@@ -75,29 +77,40 @@ public class ScrollableInfo implements Scrollable, GuiEventListener {
 
     @Override
     public int getHeight() {
-        return this.getEntries().stream().mapToInt(InfoEntry::getHeight).sum()
+        if (this.getEntries().isEmpty()) return 0;
+        return TOP_HEADING_HEIGHT + this.getEntries().stream().mapToInt(InfoEntry::getHeight).sum()
                 + (this.hasRewardHeading() ? REWARD_HEADING_HEIGHT : 0);
     }
 
     @Override
     public void render(@NotNull GuiGraphics ps, int mouseX, int mouseY, float partialTicks) {
         List<InfoEntry> entries = this.getEntries();
+        if (entries.isEmpty()) return;
+        int x = this.parent != null ? (int) this.parent.getXOffset() : 0;
+        int y = this.parent != null ? (int) this.parent.getYOffset() : 0;
+        int width = this.parent != null ? this.parent.width : this.display.getRightPanelWidth() - 36;
+        Font font = Minecraft.getInstance().font;
+        Component topTitle = this.questDetails.quest.isCompleted()
+                || (this.showRewardPreviews && this.display.getObjectiveDisplayData().isEmpty())
+                ? Component.translatable("questlog.info.rewards")
+                : Component.translatable("questlog.info.objectives");
+        int titleX = x + (width - font.width(topTitle)) / 2;
+        int titleY = y + (TITLE_HEIGHT - font.lineHeight + 2) / 2;
+        int hrX = x + (width - this.questDetails.getGuiSet().panelHR.width()) / 2;
+        ps.drawString(font, topTitle, titleX, titleY, this.questDetails.getPalette().titleColor(), false);
+        this.questDetails.getGuiSet().panelHR.blit(ps, hrX, y + TITLE_HEIGHT + HR_Y_OFFSET);
         if (this.hasRewardHeading()) {
-            int x = this.parent != null ? (int) this.parent.getXOffset() : 0;
-            int y = (this.parent != null ? (int) this.parent.getYOffset() : 0);
+            int rewardY = y + TOP_HEADING_HEIGHT;
             for (int i = 0; i < this.display.getObjectiveDisplayData().size(); i++) {
-                y += entries.get(i).getHeight();
+                rewardY += entries.get(i).getHeight();
             }
-            int width = this.parent != null ? this.parent.width : this.display.getRightPanelWidth() - 36;
-            Font font = Minecraft.getInstance().font;
             Component title = Component.translatable("questlog.info.rewards");
-            int titleX = x + (width - font.width(title)) / 2;
-            int titleY = y + REWARD_HEADING_TITLE_Y + (TITLE_HEIGHT - font.lineHeight + 2) / 2;
-            int hrX = x + (width - this.questDetails.getGuiSet().panelHR.width()) / 2;
-            this.questDetails.getGuiSet().panelHR.blit(ps, hrX, y);
-            ps.drawString(font, title, titleX, titleY, this.questDetails.getPalette().titleColor(), false);
+            int rewardTitleX = x + (width - font.width(title)) / 2;
+            int rewardTitleY = rewardY + REWARD_HEADING_TITLE_Y + (TITLE_HEIGHT - font.lineHeight + 2) / 2;
+            this.questDetails.getGuiSet().panelHR.blit(ps, hrX, rewardY);
+            ps.drawString(font, title, rewardTitleX, rewardTitleY, this.questDetails.getPalette().titleColor(), false);
             this.questDetails.getGuiSet().panelHR.blit(ps,
-                    hrX, y + REWARD_HEADING_TITLE_Y + TITLE_HEIGHT + HR_Y_OFFSET);
+                    hrX, rewardY + REWARD_HEADING_TITLE_Y + TITLE_HEIGHT + HR_Y_OFFSET);
         }
         for (int i = 0; i < entries.size(); i++) {
             InfoEntry entry = entries.get(i);

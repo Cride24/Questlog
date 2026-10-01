@@ -5,6 +5,9 @@ import com.google.gson.JsonParser;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.FormattedText;
+import net.minecraft.locale.Language;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.resources.ResourceLocation;
 import org.infernalstudios.questlog.client.gui.screen.QuestDetails;
@@ -46,6 +49,7 @@ public final class QuestDetailsVerification {
         translated.addProperty("translatable", true);
         check(new QuestDisplayData(translated).getDetails().getString().equals("Translated extra instructions"),
                 "Resolve details through the player's language");
+        verifyLanguageChange();
         JsonObject disabled = definition("\"Additional text\"");
         disabled.addProperty("disable_details_button", true);
         disabled.addProperty("details_open_by_default", true);
@@ -65,6 +69,65 @@ public final class QuestDetailsVerification {
         check(new QuestDetails(null, quest(new QuestDisplayData(absentDefault))).getPreviousScreen() == null,
                 "Do not open an empty additional page by default");
         System.out.println("Quest details: " + checks + " checks passed (headless, no game launched).");
+    }
+
+    private static void verifyLanguageChange() {
+        Language original = Language.getInstance();
+        try {
+            Language.inject(testLanguage(original, "Find [Emerald](item:minecraft:emerald).",
+                    "Open [Book](item:minecraft:book)."));
+            JsonObject data = definition("\"questlog.test.dynamic.details\"");
+            data.addProperty("description", "questlog.test.dynamic.description");
+            data.addProperty("translatable", true);
+            QuestDisplayData display = new QuestDisplayData(data);
+            check(display.getDescription().getString().equals("Find Emerald."),
+                    "Initial translated description resolves");
+            Language.inject(testLanguage(original, "Trouve [Émeraude](item:minecraft:emerald).",
+                    "Ouvre [Livre](item:minecraft:book)."));
+            check(display.getDescription().getString().equals("Trouve Émeraude."),
+                    "Description follows a language change after quest construction");
+            check(display.getDetails().getString().equals("Ouvre Livre."),
+                    "Details follow a language change after quest construction");
+            check(display.matchesSearch("ÉMERAUDE"), "Search follows the current translation");
+            check(display.getDetails().getSiblings().get(1).getStyle().getHoverEvent().getAction()
+                            == HoverEvent.Action.SHOW_ITEM,
+                    "Translated item links keep their tooltip action");
+            Language.inject(testLanguage(original, "Empty description", ""));
+            QuestDisplayData emptyInThisLanguage = new QuestDisplayData(data);
+            check(!emptyInThisLanguage.hasDetails(), "Blank translated details hide the button");
+            Language.inject(testLanguage(original, "Description", "Now available"));
+            check(emptyInThisLanguage.hasDetails(), "Details can appear after a language change");
+        } finally {
+            Language.inject(original);
+        }
+    }
+
+    private static Language testLanguage(Language original, String description, String details) {
+        return new Language() {
+            @Override
+            public String getOrDefault(String key, String fallback) {
+                return switch (key) {
+                    case "questlog.test.dynamic.description" -> description;
+                    case "questlog.test.dynamic.details" -> details;
+                    default -> original.getOrDefault(key, fallback);
+                };
+            }
+
+            @Override
+            public boolean has(String key) {
+                return key.startsWith("questlog.test.dynamic.") || original.has(key);
+            }
+
+            @Override
+            public boolean isDefaultRightToLeft() {
+                return original.isDefaultRightToLeft();
+            }
+
+            @Override
+            public FormattedCharSequence getVisualOrder(FormattedText text) {
+                return original.getVisualOrder(text);
+            }
+        };
     }
 
     private static JsonObject definition(String detailsJson) {

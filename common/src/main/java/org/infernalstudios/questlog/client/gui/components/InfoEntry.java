@@ -49,7 +49,7 @@ public class InfoEntry implements Renderable, GuiEventListener {
         int indent = isReward ? rewardData.getIndentLevel() * 12 : objectiveData.getIndentLevel() * 12;
         int currentX = this.x + indent;
 
-        if (icon != null) icon.blit(ps, currentX, this.y + 4);
+        if (icon != null) icon.blit(ps, currentX, this.y + (isReward ? 1 : 4));
 
         int textX = currentX + (icon != null ? 20 : 0);
         int maxWidth = questDetails.getDisplay().getRightPanelWidth() - 36 - 15 - (icon != null ? 20 : 0) - indent;
@@ -62,6 +62,8 @@ public class InfoEntry implements Renderable, GuiEventListener {
         }
 
         if (this.objectiveData != null && this.objectiveData.getItemId() != null
+                && (org.infernalstudios.questlog.Questlog.getConfig().itemLinks == null
+                    || org.infernalstudios.questlog.Questlog.getConfig().itemLinks.showTooltips)
                 && mouseX >= textX && mouseX < textX + maxWidth
                 && mouseY >= this.y + 2 && mouseY < nameY) {
             this.questDetails.pendingItemTooltip = new net.minecraft.world.item.ItemStack(

@@ -150,6 +150,8 @@
     "text.autoconfig.questlog-client.option.preferences.showRewardPreviews.@Tooltip": "Show quest rewards before completion. Disabled by default to preserve existing quest presentation",
 
     "text.autoconfig.questlog-client.category.itemLinks": "Item Links",
+    "text.autoconfig.questlog-client.option.itemLinks.showTooltips": "Show Item Tooltips",
+    "text.autoconfig.questlog-client.option.itemLinks.showTooltips.@Tooltip": "Show item tooltips when hovering item links or item objectives",
     "text.autoconfig.questlog-client.option.itemLinks.openRecipes": "Open Item Recipes",
     "text.autoconfig.questlog-client.option.itemLinks.openRecipes.@Tooltip": "Open recipes when clicking an item link, if EMI or JEI is installed",
 
@@ -202,7 +204,7 @@
     "questlog.editor.settings": "Settings",
 
     "questlog.editor.tooltip.id": "The unique ID used to identify this quest (e.g., questlog:my_quest).",
-    "questlog.editor.tooltip.title": "The display name of the quest in the questlog.",
+    "questlog.editor.tooltip.title": "Quest title. New titles are limited to 50 characters; longer existing titles are preserved and shown on at most two lines.",
     "questlog.editor.tooltip.description": "The description or instructions for the quest.",
     "questlog.editor.tooltip.icon": "The ID of the item to display as the quest's icon (e.g., minecraft:diamond_sword).",
     "questlog.editor.tooltip.chapter": "The chapter ID this quest belongs to.",

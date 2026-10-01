@@ -48,6 +48,7 @@ The followup quest will only appear and start tracking once `linear_1_start` is 
 
 `quests/item_tooltip_quest.json` shows inline item text and an item objective.
 Hover either the linked item label or the objective name to see the default item tooltip.
+`itemLinks.showTooltips` in the client config can hide these tooltips without disabling recipe clicks.
 No recipe viewer or additional objective-name markup is required.
 
 ### Item recipe example

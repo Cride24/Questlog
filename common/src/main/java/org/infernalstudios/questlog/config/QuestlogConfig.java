@@ -127,6 +127,9 @@ public class QuestlogConfig implements ConfigData {
 
     public static class ItemLinks {
         @ConfigEntry.Gui.Tooltip()
+        public boolean showTooltips = true;
+
+        @ConfigEntry.Gui.Tooltip()
         public boolean openRecipes = true;
     }
 

@@ -1,4 +1,10 @@
 {
+  "text.autoconfig.questlog-client.category.itemLinks": "Liens vers les objets",
+  "text.autoconfig.questlog-client.option.itemLinks.showTooltips": "Afficher les infobulles des objets",
+  "text.autoconfig.questlog-client.option.itemLinks.showTooltips.@Tooltip": "Affiche les infobulles au survol des liens et des objectifs associés à un objet.",
+  "text.autoconfig.questlog-client.option.itemLinks.openRecipes": "Ouvrir les recettes des objets",
+  "text.autoconfig.questlog-client.option.itemLinks.openRecipes.@Tooltip": "Ouvre les recettes au clic si EMI ou JEI est installé.",
+  "questlog.editor.tooltip.title": "Titre de la quête. Les nouveaux titres sont limités à 50 caractères ; les anciens titres plus longs restent conservés et s'affichent sur deux lignes au maximum.",
   "questlog.info.no_details": "Pas de détails supplémentaires.",
   "questlog.editor.advanced.details": "Détails supplémentaires",
   "questlog.editor.tooltip.advanced.details": "Texte facultatif affiché sur la page Détails. Accepte les clés de traduction, les liens et les composants de texte JSON. Laisser vide pour masquer le bouton Détails.",

@@ -34,6 +34,14 @@ public class QuestDisplayData {
     @Nullable
     private final Component descriptionFailed;
     @Nullable
+    private final String descriptionTranslationKey;
+    @Nullable
+    private final String detailsTranslationKey;
+    @Nullable
+    private final String completedTranslationKey;
+    @Nullable
+    private final String failedTranslationKey;
+    @Nullable
     private final Blittable icon;
     @Nullable
     private final ResourceLocation completedSound;
@@ -100,13 +108,18 @@ public class QuestDisplayData {
             parsedDescription = parseInlineRichText(translatable ? Component.translatable(rawStr).getString() : rawStr);
         }
         this.description = parsedDescription;
+        this.descriptionTranslationKey = translationKey(data.get("description"), translatable);
         JsonElement detailsElement = data.get("details");
         Component parsedDetails = detailsElement == null || detailsElement.isJsonNull()
                 || detailsElement.isJsonArray() && detailsElement.getAsJsonArray().isEmpty()
                 ? null : parseDescription(detailsElement, translatable);
-        this.details = parsedDetails != null && !parsedDetails.getString().isBlank() ? parsedDetails : null;
+        this.detailsTranslationKey = translationKey(detailsElement, translatable);
+        this.details = parsedDetails != null
+                && (this.detailsTranslationKey != null || !parsedDetails.getString().isBlank()) ? parsedDetails : null;
         this.descriptionCompleted = parseDescription(data.get("description_completed"), translatable);
+        this.completedTranslationKey = translationKey(data.get("description_completed"), translatable);
         this.descriptionFailed = parseDescription(data.get("description_failed"), translatable);
+        this.failedTranslationKey = translationKey(data.get("description_failed"), translatable);
 
         if (data.has("badge") && data.get("badge").isJsonObject()) {
             JsonObject badgeObj = data.getAsJsonObject("badge");
@@ -186,6 +199,21 @@ public class QuestDisplayData {
         this.leftPanelYOffset = JsonUtils.getOrDefault(data, "left_panel_y_offset", 0);
         this.rightPanelXOffset = JsonUtils.getOrDefault(data, "right_panel_x_offset", 0);
         this.rightPanelYOffset = JsonUtils.getOrDefault(data, "right_panel_y_offset", 0);
+    }
+
+    @Nullable
+    private static String translationKey(JsonElement element, boolean translatable) {
+        if (!translatable || element == null || !element.isJsonPrimitive()
+                || !element.getAsJsonPrimitive().isString()) return null;
+        String value = element.getAsString();
+        if ((value.startsWith("[") && value.endsWith("]") && !value.contains("]("))
+                || (value.startsWith("{") && value.endsWith("}"))) return null;
+        return value;
+    }
+
+    @Nullable
+    private Component resolveLocalized(@Nullable Component parsed, @Nullable String key) {
+        return key == null ? parsed : parseInlineRichText(Component.translatable(key).getString());
     }
 
     private Component parseDescription(JsonElement descriptionElement, boolean translatable) {
@@ -296,12 +324,13 @@ public class QuestDisplayData {
         String lowerQuery = query.toLowerCase();
 
         if (this.title.getString().toLowerCase().contains(lowerQuery)) return true;
-        if (this.description != null && this.description.getString().toLowerCase().contains(lowerQuery)) return true;
-        if (this.details != null && this.details.getString().toLowerCase().contains(lowerQuery)) return true;
-        if (this.descriptionCompleted != null && this.descriptionCompleted.getString().toLowerCase().contains(lowerQuery))
-            return true;
-        if (this.descriptionFailed != null && this.descriptionFailed.getString().toLowerCase().contains(lowerQuery))
-            return true;
+        Component description = this.getDescription();
+        if (description != null && description.getString().toLowerCase().contains(lowerQuery)) return true;
+        if (this.hasDetails() && this.getDetails().getString().toLowerCase().contains(lowerQuery)) return true;
+        Component completed = this.resolveLocalized(this.descriptionCompleted, this.completedTranslationKey);
+        if (completed != null && completed.getString().toLowerCase().contains(lowerQuery)) return true;
+        Component failed = this.resolveLocalized(this.descriptionFailed, this.failedTranslationKey);
+        if (failed != null && failed.getString().toLowerCase().contains(lowerQuery)) return true;
         if (this.objectiveDisplay != null) {
             for (ObjectiveDisplayData obj : this.objectiveDisplay) {
                 if (obj.getName().getString().toLowerCase().contains(lowerQuery)) return true;
@@ -318,13 +347,13 @@ public class QuestDisplayData {
     public Component getDescription(Quest quest) {
         if (quest != null) {
             if (quest.isFailed() && this.descriptionFailed != null) {
-                return this.descriptionFailed;
+                return this.resolveLocalized(this.descriptionFailed, this.failedTranslationKey);
             }
             if (quest.isCompleted() && this.descriptionCompleted != null) {
-                return this.descriptionCompleted;
+                return this.resolveLocalized(this.descriptionCompleted, this.completedTranslationKey);
             }
         }
-        return this.description;
+        return this.getDescription();
     }
 
     public String getChapter() {
@@ -340,15 +369,15 @@ public class QuestDisplayData {
     }
 
     public Component getDescription() {
-        return this.description;
+        return this.resolveLocalized(this.description, this.descriptionTranslationKey);
     }
 
     public boolean hasDetails() {
-        return this.details != null;
+        return this.details != null && !this.getDetails().getString().isBlank();
     }
 
     public Component getDetails() {
-        return this.details != null ? this.details
+        return this.details != null ? this.resolveLocalized(this.details, this.detailsTranslationKey)
                 : Component.translatable("questlog.info.no_details").withStyle(style -> style.withItalic(true));
     }
 
