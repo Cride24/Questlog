@@ -16,4 +16,5 @@
 - Ignored malformed hover-image links instead of crashing when quest text is hovered.
 - Fixed independent scrolling for the Description and Details fields in the quest editor.
 - Resolved translated quest descriptions and details using the current client language, including inline item links.
-- Aligned reward icons with their names in the right panel.
+- Centered reward icons on the first line of their names in the right panel.
+- Enforced the 50-character title limit while editing without truncating existing longer titles.

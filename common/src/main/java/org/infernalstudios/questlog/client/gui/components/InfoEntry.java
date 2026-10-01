@@ -49,12 +49,16 @@ public class InfoEntry implements Renderable, GuiEventListener {
         int indent = isReward ? rewardData.getIndentLevel() * 12 : objectiveData.getIndentLevel() * 12;
         int currentX = this.x + indent;
 
-        if (icon != null) icon.blit(ps, currentX, this.y + (isReward ? 1 : 4));
+        Font font = Minecraft.getInstance().font;
+        if (icon != null) {
+            int iconY = isReward
+                    ? this.y + 2 + (font.lineHeight - 1) / 2 - icon.height() / 2
+                    : this.y + 4;
+            icon.blit(ps, currentX, iconY);
+        }
 
         int textX = currentX + (icon != null ? 20 : 0);
         int maxWidth = questDetails.getDisplay().getRightPanelWidth() - 36 - 15 - (icon != null ? 20 : 0) - indent;
-
-        Font font = Minecraft.getInstance().font;
         int nameY = this.y + 2;
         for (net.minecraft.util.FormattedCharSequence line : font.split(name, Math.max(1, maxWidth))) {
             ps.drawString(font, line, textX, nameY, questDetails.getPalette().textColor(), false);

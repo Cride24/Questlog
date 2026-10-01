@@ -45,6 +45,12 @@ import java.util.*;
 import java.util.function.Supplier;
 
 public class QuestEditorScreen extends Screen {
+    static boolean acceptsTitleChange(String current, String candidate) {
+        int candidateLength = candidate.codePointCount(0, candidate.length());
+        int currentLength = current.codePointCount(0, current.length());
+        return candidateLength <= 50 || candidateLength <= currentLength;
+    }
+
     static final ResourceLocation GEAR_ICON = ResourceLocation.fromNamespaceAndPath(Questlog.MODID, "textures/gui/editor_gear.png");
     static final ResourceLocation GEAR_HIGHLIGHTED = ResourceLocation.fromNamespaceAndPath(Questlog.MODID, "textures/gui/editor_gear_highlighted.png");
     static final ResourceLocation CROSS_ICON = ResourceLocation.fromNamespaceAndPath(Questlog.MODID, "textures/gui/editor_cross.png");
@@ -336,9 +342,10 @@ public class QuestEditorScreen extends Screen {
         this.idBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.id")));
 
         this.titleBox = new NoShadowEditBox(this.font, baseX + 15, baseY + 54, 195, 16, Component.empty());
-        // Preserve older titles while limiting newly typed titles to about two default-width lines.
+        // Preserve older titles, but reject any added character beyond the 50-character limit.
         this.titleBox.setMaxLength(Math.max(50, this.tempTitle.length()));
         this.titleBox.setValue(this.tempTitle);
+        this.titleBox.setFilter(candidate -> acceptsTitleChange(this.titleBox.getValue(), candidate));
         this.titleBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.title")));
 
         this.descriptionBox = new QuestTextEditBox(this.font, baseX + 15, baseY + 86, 195, 54);

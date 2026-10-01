@@ -25,7 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ignored malformed hover-image links instead of crashing when quest text is hovered.
 - Fixed independent scrolling for the Description and Details fields in the quest editor.
 - Resolved translated quest descriptions and details using the current client language, including inline item links.
-- Aligned reward icons with their names in the right panel.
+- Centered reward icons on the first line of their names in the right panel.
+- Enforced the 50-character title limit while editing without truncating existing longer titles.
 
 ## [3.4.1] - 2026-09-22
 

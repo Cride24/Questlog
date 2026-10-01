@@ -54,7 +54,17 @@ public final class EditorScrollingVerification {
         check(description.offset() == previous, "Outside wheel leaves text unchanged");
         description.contentHeight = 9;
         check(!description.mouseScrolled(110, 110, 0, -1), "Short text yields the wheel to its parent");
-        System.out.println("Editor scrolling: " + checks + " checks passed (headless; visual appearance needs in-game testing).");
+
+        check(QuestEditorScreen.acceptsTitleChange("x".repeat(49), "x".repeat(50)),
+                "The fiftieth title character is accepted");
+        check(!QuestEditorScreen.acceptsTitleChange("x".repeat(50), "x".repeat(51)),
+                "The fifty-first title character is rejected");
+        check(!QuestEditorScreen.acceptsTitleChange("x".repeat(60), "x".repeat(61)),
+                "Existing long titles cannot grow");
+        check(QuestEditorScreen.acceptsTitleChange("x".repeat(60), "x".repeat(59)),
+                "Existing long titles may be shortened");
+        System.out.println("Editor scrolling and title input: " + checks
+                + " checks passed (headless; visual appearance needs in-game testing).");
     }
 
     private static void check(boolean value, String message) {
