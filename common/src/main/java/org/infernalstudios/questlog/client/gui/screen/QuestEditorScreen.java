@@ -774,7 +774,7 @@ public class QuestEditorScreen extends Screen {
                 this.editingEntry = null;
                 this.currentNestedList = null;
                 this.rebuildWidgets();
-            }).bounds(panel2X + 15, panel2Y + 62, 130, 16).build());
+            }).bounds(panel2X + 15, panel2Y + (meta == null || meta.amountFieldKey() != null ? 118 : 90), 130, 16).build());
 
             this.entryTargetBox = null;
             this.entrySlotBox = null;
@@ -841,7 +841,7 @@ public class QuestEditorScreen extends Screen {
             Button btnLevels = Button.builder(Component.literal("Levels: " + (this.entryLevelsToggle ? "True" : "False")), btn -> {
                 this.entryLevelsToggle = !this.entryLevelsToggle;
                 btn.setMessage(Component.literal("Levels: " + (this.entryLevelsToggle ? "True" : "False")));
-            }).bounds(panel2X + 75, panel2Y + 84, 70, 14).build();
+            }).bounds(panel2X + 75, panel2Y + 66, 70, 14).build();
             btnLevels.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.levels")));
             this.addRenderableWidget(btnLevels);
         }

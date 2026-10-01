@@ -57,8 +57,9 @@ public class InfoEntry implements Renderable, GuiEventListener {
             icon.blit(ps, currentX, iconY);
         }
 
-        int textX = currentX + (icon != null ? 20 : 0);
-        int maxWidth = questDetails.getDisplay().getRightPanelWidth() - 36 - 15 - (icon != null ? 20 : 0) - indent;
+        boolean hasIconColumn = icon != null || isReward && rewardData.getIndentLevel() > 0;
+        int textX = currentX + (hasIconColumn ? 20 : 0);
+        int maxWidth = questDetails.getDisplay().getRightPanelWidth() - 36 - 15 - (hasIconColumn ? 20 : 0) - indent;
         int nameY = this.y + 2;
         for (net.minecraft.util.FormattedCharSequence line : font.split(name, Math.max(1, maxWidth))) {
             ps.drawString(font, line, textX, nameY, questDetails.getPalette().textColor(), false);
@@ -87,7 +88,8 @@ public class InfoEntry implements Renderable, GuiEventListener {
         boolean reward = this.rewardData != null;
         Blittable icon = reward ? this.rewardData.getIcon() : this.objectiveData.getIcon();
         int indent = (reward ? this.rewardData.getIndentLevel() : this.objectiveData.getIndentLevel()) * 12;
-        int width = this.questDetails.getDisplay().getRightPanelWidth() - 51 - indent - (icon != null ? 20 : 0);
+        boolean hasIconColumn = icon != null || reward && this.rewardData.getIndentLevel() > 0;
+        int width = this.questDetails.getDisplay().getRightPanelWidth() - 51 - indent - (hasIconColumn ? 20 : 0);
         return font.split(reward ? this.rewardData.getName() : this.objectiveData.getName(), Math.max(1, width)).size() * font.lineHeight;
     }
 
