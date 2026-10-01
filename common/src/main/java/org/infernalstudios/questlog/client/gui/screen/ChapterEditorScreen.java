@@ -346,7 +346,6 @@ public class ChapterEditorScreen extends Screen {
                 String str = rl.toString();
                 if (str.toLowerCase().contains(lower)) {
                     result.add(str);
-                    if (result.size() >= 5) break;
                 }
             }
         }
@@ -435,6 +434,14 @@ public class ChapterEditorScreen extends Screen {
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (this.autocompleteHelper.mouseScrolled(mouseX, mouseY, scrollY)) {
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override

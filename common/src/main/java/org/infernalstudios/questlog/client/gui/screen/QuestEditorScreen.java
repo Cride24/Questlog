@@ -1487,7 +1487,6 @@ public class QuestEditorScreen extends Screen {
                     String str = "#" + tagKey.location();
                     if (str.toLowerCase().contains(lower)) {
                         result.add(str);
-                        if (result.size() >= 5) break;
                     }
                 }
             }
@@ -1560,7 +1559,6 @@ public class QuestEditorScreen extends Screen {
                 String str = rl.toString();
                 if (str.toLowerCase().contains(lower)) {
                     result.add(str);
-                    if (result.size() >= 5) break;
                 }
             }
         }
@@ -1590,7 +1588,6 @@ public class QuestEditorScreen extends Screen {
                 String str = rl.toString();
                 if (str.toLowerCase().contains(lower)) {
                     result.add(str);
-                    if (result.size() >= 5) break;
                 }
             }
         } else if (box == this.chapterBox) {
@@ -1599,7 +1596,6 @@ public class QuestEditorScreen extends Screen {
                 String path = rl.getPath();
                 if (lower.isEmpty() || path.toLowerCase().contains(lower)) {
                     result.add(path);
-                    if (result.size() >= 5) break;
                 }
             }
         }
@@ -1876,6 +1872,9 @@ public class QuestEditorScreen extends Screen {
             if (this.contextMenu.mouseScrolled(scrollY)) {
                 return true;
             }
+        }
+        if (this.autocompleteHelper.mouseScrolled(mouseX, mouseY, scrollY)) {
+            return true;
         }
         if (this.rightPageState == RightPageState.SELECT_TYPE) {
             int PANEL_SPACING = 6;
