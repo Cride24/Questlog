@@ -52,7 +52,7 @@ public class InfoEntry implements Renderable, GuiEventListener {
         Font font = Minecraft.getInstance().font;
         if (icon != null) {
             int iconY = isReward
-                    ? this.y + 2 + (font.lineHeight - 1) / 2 - icon.height() / 2
+                    ? this.y + 1 + (font.lineHeight - 1) / 2 - icon.height() / 2
                     : this.y + 4;
             icon.blit(ps, currentX, iconY);
         }
