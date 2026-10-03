@@ -2,14 +2,14 @@
 
 - Added inline quest/chapter translations, searchable in-game language selection, per-field US-English/authored-order fallback and legacy None mode.
 - Added a personal quest tracking overlay with server-side order and local window geometry, passive during gameplay and interactive in Minecraft chat.
-- Added author validation for required fields, registered types, values and available references, with clickable in-game reports and optional-field markers.
+- Added author validation for required fields, registered types, values and available references, with clickable in-game reports and required-field markers.
 - Added explicit draft saving and activation, plus isolated functional and intentionally malformed test examples.
 
 ### Changed
 
 - Editing deactivates a quest on the server until the author explicitly reactivates it. Incomplete drafts retain saved progression; unchanged entries recover their state after reordering.
 - Disabled quests stay followed in grey. Completed quests move after incomplete quests and leave tracking once all rewards are collected, or immediately when no rewards exist.
-- Updated the NeoForge network protocol to 2.2 for inline-language definitions in the development build.
+- Updated the NeoForge network protocol to 2.2 for inline-language definitions; clients and servers must use matching versions.
 
 ### Fixed
 

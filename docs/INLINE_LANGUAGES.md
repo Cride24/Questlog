@@ -1,6 +1,6 @@
 # Traductions dans les définitions Questlog
 
-Révision `3.5.0-tracking-dev.6`, Minecraft 1.21.1, Fabric et NeoForge. Les traductions d’une quête sont réunies dans son JSON ; celles d’un chapitre sont réunies dans le JSON du chapitre. Aucun fichier de textes externe n’est nécessaire pour cette méthode.
+Version `3.5.1`, Minecraft 1.21.1, Fabric et NeoForge. Les traductions d’une quête sont réunies dans son JSON ; celles d’un chapitre sont réunies dans le JSON du chapitre. Aucun fichier de textes externe n’est nécessaire pour cette méthode.
 
 ## Édition
 
@@ -39,4 +39,4 @@ Le dossier [examples/inline-languages](../examples/inline-languages/questlog) co
 
 Utiliser cette révision côté serveur et client. Le protocole NeoForge est `2.2`. Les tests automatisés contrôlent les définitions, les sélections de texte, les états d’éditeur et la progression ; ils ne prouvent pas le rendu ni les gestes de sélection dans Minecraft.
 
-Construction du 3 octobre 2026 réussie sur Fabric et NeoForge : 49 contrôles multilingues, 36 contrôles d’éditeur, 143 contrôles du suivi/validateur et les suites existantes (19 images, 42 détails, 10 recettes, aperçu des récompenses) réussis. Les essais en jeu restent à effectuer pour cette révision.
+Construction du 3 octobre 2026 réussie sur Fabric et NeoForge : 49 contrôles multilingues, 36 contrôles d’éditeur, 143 contrôles du suivi/validateur et les suites existantes (19 images, 42 détails, 10 recettes, aperçu des récompenses) réussis. La révision de développement correspondante a été validée par le joueur sur NeoForge 1.21.1 le 3 octobre 2026, puis intégrée à la 3.5.1. Cette validation ne couvre pas les autres configurations du tableau d’essais, notamment Fabric et les serveurs dédiés.

@@ -2,7 +2,7 @@
 
 ## Base et périmètre
 
-Branche `codex/quest-tracking-validation-1.21.1`, créée depuis `codex/questlog-3.5.0-1.21.1`, commit `a7f4cb3`. Version des fichiers de test : `3.5.0-tracking-dev.6`, pour Minecraft 1.21.1, Fabric et NeoForge. Ce travail constitue une version à tester en jeu, pas une publication stable.
+Version `3.5.1`, pour Minecraft 1.21.1, Fabric et NeoForge, sur la branche `codex/questlog-3.5.1-1.21.1` du fork. Elle réunit la 3.5.0 (commit `a7f4cb3`) et les ajouts de `codex/quest-tracking-validation-1.21.1`. Le joueur a validé la dernière révision de développement sur NeoForge 1.21.1 le 3 octobre 2026 ; les autres configurations restent à vérifier séparément.
 
 Les définitions, objectifs, récompenses, écrans, composants défilants, métadonnées d’édition, messages réseau et fichiers de progression existants ont été réutilisés. Aucun port Forge ni dépendance Flower n’a été ajouté. La révision 5 ajoute les [traductions intégrées et leur édition](INLINE_LANGUAGES.md), pour les quêtes et les chapitres.
 
@@ -68,7 +68,7 @@ Retour du joueur du 3 octobre 2026 : les fonctions de la révision précédente 
 
 Vérifications automatisées de `tracking-dev.4` : 143 contrôles du suivi/validateur et les suites existantes réussis. Les nouveaux cas couvrent les quatre côtés du cadre, la place minimale d’une ligne, l’ordre de création, les déplacements continus dans les deux sens, un pointeur immobile, les groupes d’état, le défilement, les entrées masquées et la persistance de l’ordre final. Le rendu reste à vérifier en jeu.
 
-Utiliser le même fichier de développement côté serveur et client ; le protocole NeoForge est passé à `2.2`. Pour un retour à 3.5.0, restaurer la sauvegarde du monde et de `config/questlog` réalisée avant l’essai.
+Utiliser la même version 3.5.1 côté serveur et client ; le protocole NeoForge est passé à `2.2`. Pour un retour à 3.5.0, restaurer la sauvegarde du monde et de `config/questlog` réalisée avant l’essai.
 
 | Environnement | Essais requis |
 | --- | --- |
@@ -80,11 +80,11 @@ Utiliser le même fichier de développement côté serveur et client ; le protoc
 | Deux plateformes, avec JEI puis EMI | Recettes et infobulles existantes ; absence de capture de clics dans l’inventaire par cet overlay limité au chat. |
 | Résolution et échelle de GUI variées | Fenêtre dans l’écran, texte du chat utilisable en dehors de la fenêtre, bordures et défilement accessibles. |
 
-Compléter aussi chaque scénario du tableau des exemples : deux récompenses manuelles, aucune récompense, automatique, choix, répétable, suspension puis réactivation, JSON incorrect. Les essais du 2 octobre ont confirmé la présence du bouton Suivre, le classement des états et la molette. Ils ont révélé l’interruption du glissement et les écarts de style, corrigés dans cette révision ; le résultat en jeu de ces corrections reste à renseigner par le testeur.
+Compléter aussi chaque scénario du tableau des exemples : deux récompenses manuelles, aucune récompense, automatique, choix, répétable, suspension puis réactivation, JSON incorrect. Les essais du 2 octobre ont confirmé la présence du bouton Suivre, le classement des états et la molette. Ils ont révélé l’interruption du glissement et les écarts de style, corrigés dans cette révision ; le joueur a ensuite validé les corrections et la dernière révision sur NeoForge 1.21.1 le 3 octobre 2026. Cette validation ne couvre pas Fabric ni les serveurs dédiés.
 
 ### Reprise rapide des essais
 
-1. Utiliser le nouveau JAR `.2` du chargeur concerné. En multijoueur, utiliser cette même révision sur le serveur et les clients.
+1. Utiliser le JAR `3.5.1` du chargeur concerné. En multijoueur, utiliser cette même révision sur le serveur et les clients.
 2. Ouvrir le chat, maintenir le clic sur le titre de la fenêtre plusieurs secondes, puis tester chaque bord/coin et l’icône d’une quête. Relâcher hors de la fenêtre et fermer le chat pendant un glissement. Vérifier que la saisie du chat reste utilisable hors du suivi.
 3. Essayer les opacités 0, 40 et 100 % dans la configuration du mod : cadre et fond changent, le texte reste affiché.
 4. Passer de `/ql edit_mode true` à `/ql edit_mode false`, puis revenir : les entrées suspendues disparaissent et reviennent ; les quêtes actives conservent leur ordre.
