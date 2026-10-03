@@ -257,7 +257,9 @@ public class QuestList extends AbstractContainerEventHandler implements Scrollab
                 Component title = this.quest.getDisplay().getTitle();
                 ps.drawString(font, title, currentX, y, Questlog.getConfig().colors.textColor, false);
 
-                if (this.quest.isFailed()) {
+                if (!this.quest.isActive()) {
+                    ps.drawString(font, Component.translatable(this.quest.isFunctional() ? "questlog.tracking.disabled" : "questlog.author.nonfunctional"), currentX+font.width(title)+8,y,0x888888,false);
+                } else if (this.quest.isFailed()) {
                     int titleWidth = font.width(title);
                     int statusX = currentX + titleWidth + 8;
                     ps.drawString(font, Component.translatable("questlog.quest.failed"), statusX, y, Questlog.getConfig().colors.failedTextColor, false);
@@ -273,6 +275,11 @@ public class QuestList extends AbstractContainerEventHandler implements Scrollab
 
                     ps.drawString(font, statusText, statusX, y, statusColor, false);
                 }
+            } else if (!this.quest.isActive()) {
+                int tx=xPosition+(int)this.list.scroller.getXOffset()+dx;
+                int ty=yPosition+(int)this.list.scroller.getYOffset()+5;
+                ps.drawString(font,this.quest.getDisplay().getTitle(),tx,ty,0x888888,false);
+                ps.drawString(font,Component.translatable(this.quest.isFunctional() ? "questlog.tracking.disabled" : "questlog.author.nonfunctional"),tx,ty+font.lineHeight,0x888888,false);
             } else if (this.quest.isFailed()) {
                 int linesHeight = font.lineHeight * 2;
                 int dy = (height - linesHeight) / 2;
@@ -390,7 +397,7 @@ public class QuestList extends AbstractContainerEventHandler implements Scrollab
                     int gearY = this.list.getRowTop(itemIndex) + (this.list.itemHeight - 16) / 2;
                     if (mouseX >= gearX && mouseX <= gearX + 16 && mouseY >= gearY && mouseY <= gearY + 16) {
                         Minecraft mc = Minecraft.getInstance();
-                        mc.setScreen(new QuestEditorScreen(mc.screen, this.quest));
+                        QuestEditorScreen.requestEdit(mc.screen, this.quest);
                         return true;
                     }
                 }

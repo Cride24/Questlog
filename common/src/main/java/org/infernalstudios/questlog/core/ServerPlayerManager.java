@@ -94,6 +94,7 @@ public class ServerPlayerManager {
         }
 
         data.putBoolean("edit_mode", questManager.isEditMode());
+        questManager.tracking.save(data);
 
         Path tempFile = null;
         try {
@@ -185,6 +186,8 @@ public class ServerPlayerManager {
             }
         }
 
+        questManager.tracking.load(data);
+        questManager.tracking.prune(questManager);
         questManager.setLoaded(true);
 
         if (shouldSave) {
@@ -311,6 +314,8 @@ public class ServerPlayerManager {
 
             Services.PLATFORM.sendPacketToClient(serverPlayer, new QuestSyncPacket(definitions, chapterDefinitions, data, advancements));
             Services.PLATFORM.sendPacketToClient(serverPlayer, new QuestEditModePacket(questManager.isEditMode()));
+            questManager.tracking.prune(questManager);
+            Services.PLATFORM.sendPacketToClient(serverPlayer, new org.infernalstudios.questlog.network.packet.QuestTrackingPacket(questManager.tracking.ids()));
         }
     }
 

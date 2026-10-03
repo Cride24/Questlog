@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.ItemStack;
 import org.infernalstudios.questlog.Questlog;
+import org.infernalstudios.questlog.core.QuestText;
 import org.infernalstudios.questlog.client.gui.QuestlogGuiSet;
 import org.infernalstudios.questlog.core.quests.Quest;
 import org.infernalstudios.questlog.core.quests.objectives.Objective;
@@ -95,31 +96,40 @@ public class QuestDisplayData {
     @Nullable
     private List<RewardDisplayData> rewardDisplay = null;
 
-    public QuestDisplayData(JsonObject data) {
+    private final JsonObject textSource;
+    private final String constructedLanguage;
+    private String cachedLanguage;
+    private QuestDisplayData cachedText;
+
+    public QuestDisplayData(JsonObject data) { this(data, true); }
+    private QuestDisplayData(JsonObject data, boolean dynamic) {
+        this.textSource = dynamic ? data.deepCopy() : null;
+        this.constructedLanguage = QuestText.language();
+        data = QuestText.project(data);
         boolean translatable = JsonUtils.getOrDefault(data, "translatable", false);
 
-        String title = JsonUtils.getString(data, "title");
-        this.title = translatable ? Component.translatable(title) : Component.literal(title);
+        String title = JsonUtils.getOrDefault(data, "title", "");
+        this.title = QuestText.translatable(data,"title",translatable) ? Component.translatable(title) : Component.literal(title);
         this.sortOrder = JsonUtils.getOrDefault(data, "sort_order", JsonUtils.getOrDefault(data, "order", 0));
 
-        Component parsedDescription = parseDescription(data.get("description"), translatable);
+        Component parsedDescription = parseDescription(data.get("description"), QuestText.translatable(data,"description",translatable));
         if (parsedDescription == null) {
             String rawStr = JsonUtils.getOrDefault(data, "description", "");
-            parsedDescription = parseInlineRichText(translatable ? Component.translatable(rawStr).getString() : rawStr);
+            parsedDescription = parseInlineRichText(QuestText.translatable(data,"description",translatable) ? Component.translatable(rawStr).getString() : rawStr);
         }
         this.description = parsedDescription;
-        this.descriptionTranslationKey = translationKey(data.get("description"), translatable);
+        this.descriptionTranslationKey = translationKey(data.get("description"), QuestText.translatable(data,"description",translatable));
         JsonElement detailsElement = data.get("details");
         Component parsedDetails = detailsElement == null || detailsElement.isJsonNull()
                 || detailsElement.isJsonArray() && detailsElement.getAsJsonArray().isEmpty()
-                ? null : parseDescription(detailsElement, translatable);
-        this.detailsTranslationKey = translationKey(detailsElement, translatable);
+                ? null : parseDescription(detailsElement, QuestText.translatable(data,"details",translatable));
+        this.detailsTranslationKey = translationKey(detailsElement, QuestText.translatable(data,"details",translatable));
         this.details = parsedDetails != null
                 && (this.detailsTranslationKey != null || !parsedDetails.getString().isBlank()) ? parsedDetails : null;
-        this.descriptionCompleted = parseDescription(data.get("description_completed"), translatable);
-        this.completedTranslationKey = translationKey(data.get("description_completed"), translatable);
-        this.descriptionFailed = parseDescription(data.get("description_failed"), translatable);
-        this.failedTranslationKey = translationKey(data.get("description_failed"), translatable);
+        this.descriptionCompleted = parseDescription(data.get("description_completed"), QuestText.translatable(data,"description_completed",translatable));
+        this.completedTranslationKey = translationKey(data.get("description_completed"), QuestText.translatable(data,"description_completed",translatable));
+        this.descriptionFailed = parseDescription(data.get("description_failed"), QuestText.translatable(data,"description_failed",translatable));
+        this.failedTranslationKey = translationKey(data.get("description_failed"), QuestText.translatable(data,"description_failed",translatable));
 
         if (data.has("badge") && data.get("badge").isJsonObject()) {
             JsonObject badgeObj = data.getAsJsonObject("badge");
@@ -179,10 +189,10 @@ public class QuestDisplayData {
                 parseColor(data, "progress_text_color")
         );
 
-        this.backButtonText = parseComponent(data, "back_button_text", "gui.back", translatable);
-        this.collectButtonText = parseComponent(data, "collect_button_text", "questlog.reward.collect", translatable);
-        this.uncollectedText = parseComponent(data, "uncollected_text", "questlog.reward.uncollected", translatable);
-        this.collectedText = parseComponent(data, "collected_text", "questlog.reward.collected", translatable);
+        this.backButtonText = parseComponent(data, "back_button_text", "gui.back", QuestText.translatable(data,"back_button_text",translatable));
+        this.collectButtonText = parseComponent(data, "collect_button_text", "questlog.reward.collect", QuestText.translatable(data,"collect_button_text",translatable));
+        this.uncollectedText = parseComponent(data, "uncollected_text", "questlog.reward.uncollected", QuestText.translatable(data,"uncollected_text",translatable));
+        this.collectedText = parseComponent(data, "collected_text", "questlog.reward.collected", QuestText.translatable(data,"collected_text",translatable));
 
         this.toastOnUnlock = JsonUtils.getOrDefault(data, "toast_on_unlock", true);
         this.toastOnComplete = JsonUtils.getOrDefault(data, "toast_on_complete", true);
@@ -319,17 +329,25 @@ public class QuestDisplayData {
         }
     }
 
+    private QuestDisplayData texts() {
+        if (textSource == null || constructedLanguage.equals(QuestText.language())) return this;
+        if (!QuestText.language().equals(cachedLanguage)) {
+            cachedText = new QuestDisplayData(textSource, false); cachedLanguage = QuestText.language();
+        }
+        return cachedText;
+    }
+
     public boolean matchesSearch(String query) {
         if (query == null || query.isBlank()) return true;
         String lowerQuery = query.toLowerCase();
 
-        if (this.title.getString().toLowerCase().contains(lowerQuery)) return true;
+        if (this.getTitle().getString().toLowerCase().contains(lowerQuery)) return true;
         Component description = this.getDescription();
         if (description != null && description.getString().toLowerCase().contains(lowerQuery)) return true;
         if (this.hasDetails() && this.getDetails().getString().toLowerCase().contains(lowerQuery)) return true;
-        Component completed = this.resolveLocalized(this.descriptionCompleted, this.completedTranslationKey);
+        Component completed = texts().resolveLocalized(texts().descriptionCompleted, texts().completedTranslationKey);
         if (completed != null && completed.getString().toLowerCase().contains(lowerQuery)) return true;
-        Component failed = this.resolveLocalized(this.descriptionFailed, this.failedTranslationKey);
+        Component failed = texts().resolveLocalized(texts().descriptionFailed, texts().failedTranslationKey);
         if (failed != null && failed.getString().toLowerCase().contains(lowerQuery)) return true;
         if (this.objectiveDisplay != null) {
             for (ObjectiveDisplayData obj : this.objectiveDisplay) {
@@ -346,11 +364,11 @@ public class QuestDisplayData {
 
     public Component getDescription(Quest quest) {
         if (quest != null) {
-            if (quest.isFailed() && this.descriptionFailed != null) {
-                return this.resolveLocalized(this.descriptionFailed, this.failedTranslationKey);
+            if (quest.isFailed() && texts().descriptionFailed != null) {
+                return texts().resolveLocalized(texts().descriptionFailed, texts().failedTranslationKey);
             }
-            if (quest.isCompleted() && this.descriptionCompleted != null) {
-                return this.resolveLocalized(this.descriptionCompleted, this.completedTranslationKey);
+            if (quest.isCompleted() && texts().descriptionCompleted != null) {
+                return texts().resolveLocalized(texts().descriptionCompleted, texts().completedTranslationKey);
             }
         }
         return this.getDescription();
@@ -365,19 +383,19 @@ public class QuestDisplayData {
     }
 
     public Component getTitle() {
-        return this.title;
+        return texts().title;
     }
 
     public Component getDescription() {
-        return this.resolveLocalized(this.description, this.descriptionTranslationKey);
+        return texts().resolveLocalized(texts().description, texts().descriptionTranslationKey);
     }
 
     public boolean hasDetails() {
-        return this.details != null && !this.getDetails().getString().isBlank();
+        return texts().details != null && !this.getDetails().getString().isBlank();
     }
 
     public Component getDetails() {
-        return this.details != null ? this.resolveLocalized(this.details, this.detailsTranslationKey)
+        return texts().details != null ? texts().resolveLocalized(texts().details, texts().detailsTranslationKey)
                 : Component.translatable("questlog.info.no_details").withStyle(style -> style.withItalic(true));
     }
 
@@ -494,19 +512,19 @@ public class QuestDisplayData {
     }
 
     public Component getBackButtonText() {
-        return this.backButtonText;
+        return texts().backButtonText;
     }
 
     public Component getCollectButtonText() {
-        return this.collectButtonText;
+        return texts().collectButtonText;
     }
 
     public Component getCollectedText() {
-        return this.collectedText;
+        return texts().collectedText;
     }
 
     public Component getUncollectedText() {
-        return this.uncollectedText;
+        return texts().uncollectedText;
     }
 
     @Nullable

@@ -1,0 +1,16 @@
+{
+  "title": "Références absentes",
+  "chapter": "tracking_validation_bad",
+  "active": false,
+  "objectives": [
+    {
+      "type": "questlog:quest_complete",
+      "quest": "questlog:tracking_validation_bad/missing"
+    },
+    {
+      "type": "questlog:item_obtain",
+      "item": "minecraft:not_a_real_item"
+    }
+  ],
+  "description": "Définition volontairement incorrecte pour tester le validateur."
+}

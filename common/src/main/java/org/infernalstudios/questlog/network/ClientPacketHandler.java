@@ -29,6 +29,23 @@ public class ClientPacketHandler {
     private static final List<QuestDefinitionPacket> DEFERRED_DEFS = new CopyOnWriteArrayList<>();
     private static QuestSyncPacket DEFERRED_SYNC_PACKET = null;
 
+    public static void clearSession() { DEFERRED_DEFS.clear(); DEFERRED_SYNC_PACKET = null; }
+
+    public static void handle(QuestTrackingPacket packet, IPacketContext ctx) {
+        org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.accept(packet.ids());
+    }
+
+    public static void handle(QuestAuthorResultPacket packet, IPacketContext ctx) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        com.google.gson.JsonArray report = com.google.gson.JsonParser.parseString(packet.report()).getAsJsonArray();
+        if (!packet.success()) mc.player.displayClientMessage(net.minecraft.network.chat.Component.translatable("questlog.author.failed"), false);
+        if (packet.action() == QuestAuthorPacket.EDIT) QuestEditorScreen.acceptEdit(packet.id(), packet.success());
+        else if (packet.action() == QuestAuthorPacket.SAVE || packet.action() == QuestAuthorPacket.SAVE_DRAFT) {
+            if (mc.screen instanceof QuestEditorScreen editor) editor.finishSave(packet.id(),packet.success(),packet.action() == QuestAuthorPacket.SAVE,report);
+        } else mc.setScreen(new org.infernalstudios.questlog.client.gui.screen.QuestValidationScreen(mc.screen, report));
+    }
+
     public static void handle(QuestCompletedPacket packet, IPacketContext ctx) {
         QuestManager manager = QuestlogClient.getLocal();
         QuestlogEvents.onQuestCompleted(new QuestEvent.Completed(manager.player, manager.getQuest(packet.id()), false));
@@ -42,6 +59,7 @@ public class ClientPacketHandler {
                 throw new IllegalStateException("Quest is null, likely definition not loaded yet");
             }
             quest.deserialize(packet.data());
+            org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.invalidate();
         } catch (Throwable e) {
             Questlog.LOGGER.error("Failed to handle QuestDataPacket", e);
         }
@@ -56,11 +74,15 @@ public class ClientPacketHandler {
             QuestManager manager = QuestlogClient.getLocal();
             Quest existing = manager.getQuest(packet.id());
             CompoundTag savedData = existing != null ? existing.serialize() : null;
-            Quest quest = Quest.create(Objects.requireNonNull(GSON.fromJson(packet.getJsonString(), JsonObject.class)), packet.id(), manager);
+            JsonObject definition = Objects.requireNonNull(GSON.fromJson(packet.getJsonString(), JsonObject.class));
+            DefinitionUtil.putCachedQuest(packet.id(), definition);
+            if (existing != null) existing.setActive(false);
+            Quest quest = Quest.create(definition, packet.id(), manager);
             if (savedData != null) {
                 quest.deserialize(savedData);
             }
             manager.addQuest(quest);
+            org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.invalidate();
         } catch (Throwable e) {
             Questlog.LOGGER.error("Failed to handle QuestDefinitionPacket", e);
         }
@@ -77,6 +99,7 @@ public class ClientPacketHandler {
         Questlog.LOGGER.trace("Received remove packet for quest {}", packet.id().toString());
         QuestManager manager = QuestlogClient.getLocal();
         manager.removeQuest(packet.id());
+        org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.invalidate();
     }
 
     public static void handle(QuestTriggeredPacket packet, IPacketContext ctx) {
@@ -144,6 +167,7 @@ public class ClientPacketHandler {
 
     private static void processSync(QuestSyncPacket packet) {
         Questlog.LOGGER.info("Received quest & chapter sync from server.");
+        org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.invalidate();
         DefinitionUtil.clearClientCaches();
         QuestlogClient.ALL_ADVANCEMENTS = packet.advancements();
         for (Map.Entry<ResourceLocation, String> entry : packet.chapterDefinitions().entrySet()) {
@@ -171,13 +195,15 @@ public class ClientPacketHandler {
                 try {
                     JsonObject def = GSON.fromJson(entry.getValue(), JsonObject.class);
                     JsonObject fallbackDef = new JsonObject();
+                    fallbackDef.addProperty("active", false);
+                    fallbackDef.addProperty("_functional", false);
                     fallbackDef.addProperty("title", "Broken Quest (" + entry.getKey().getPath() + ")");
                     String errorMsg = e.getMessage() != null ? e.getMessage() : e.toString();
                     if (e.getCause() != null) {
                         errorMsg += "\nCaused by: " + e.getCause().getMessage();
                     }
                     fallbackDef.addProperty("description", "This quest failed to load properly. Edit it to fix errors.\n\nError details:\n" + errorMsg);
-                    fallbackDef.addProperty("chapter", def != null && def.has("chapter") ? def.get("chapter").getAsString() : "main");
+                    fallbackDef.addProperty("chapter", def != null && def.has("chapter") && def.get("chapter").isJsonPrimitive() && def.get("chapter").getAsJsonPrimitive().isString() ? def.get("chapter").getAsString() : "main");
                     Quest quest = Quest.create(fallbackDef, entry.getKey(), manager);
                     manager.addQuest(quest);
                 } catch (Exception ex) {

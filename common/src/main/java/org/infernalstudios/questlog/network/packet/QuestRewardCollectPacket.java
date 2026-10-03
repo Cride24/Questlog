@@ -29,10 +29,11 @@ public record QuestRewardCollectPacket(ResourceLocation id, int rewardIndex,
     public static void handle(QuestRewardCollectPacket packet, IPacketContext ctx) {
         QuestManager manager = ServerPlayerManager.INSTANCE.getManagerByPlayer(Objects.requireNonNull(ctx.getSender()));
         Quest quest = manager.getQuest(packet.id);
-        if (quest == null) {
+        if (quest == null || !quest.isActive() || !quest.isTriggered() || !quest.isCompleted()) {
             Questlog.LOGGER.warn("Quest {} not found", packet.id);
             return;
         }
+        if (packet.rewardIndex < 0 || packet.rewardIndex >= quest.rewards.size()) return;
         Reward reward = quest.rewards.get(packet.rewardIndex);
         if (reward == null) {
             Questlog.LOGGER.warn("Reward {} not found in quest {}", packet.rewardIndex, packet.id);
@@ -41,6 +42,7 @@ public record QuestRewardCollectPacket(ResourceLocation id, int rewardIndex,
         if (!reward.hasRewarded()) {
             if (reward instanceof org.infernalstudios.questlog.core.quests.rewards.ChoiceReward choiceReward) {
                 choiceReward.setSelectedIndices(packet.selections());
+                if (!choiceReward.canClaim()) return;
             }
             reward.applyReward((ServerPlayer) manager.player);
             ServerPlayerManager.INSTANCE.save(manager);

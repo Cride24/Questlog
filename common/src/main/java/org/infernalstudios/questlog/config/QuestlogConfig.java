@@ -27,6 +27,21 @@ public class QuestlogConfig implements ConfigData {
     @ConfigEntry.Gui.TransitiveObject
     public ItemLinks itemLinks = new ItemLinks();
 
+    @ConfigEntry.Category("tracking")
+    @ConfigEntry.Gui.TransitiveObject
+    public Tracking tracking = new Tracking();
+    public static class Tracking {
+        public boolean enabled = true;
+        public int x = 8;
+        public int y = 8;
+        public int width = 200;
+        public int height = 140;
+        @ConfigEntry.BoundedDiscrete(min = 0, max = 100)
+        @ConfigEntry.Gui.Tooltip
+        public int backgroundOpacity = 85;
+        public float backgroundAlpha() { return Math.max(0, Math.min(100, backgroundOpacity)) / 100f; }
+    }
+
     public static class Button {
         @ConfigEntry.Gui.Tooltip()
         public boolean enabled = true;

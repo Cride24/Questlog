@@ -75,6 +75,7 @@ public class RandomReward extends Reward {
 
     @Override
     public void applyReward(ServerPlayer player) {
+        if (this.getParent() != null && !this.getParent().isActive()) return;
         if (this.rolledIndices.isEmpty()) {
             for (int i = 0; i < this.rollCount; i++) {
                 this.rolledIndices.add(this.roll(player));

@@ -28,6 +28,8 @@ import org.infernalstudios.questlog.client.gui.components.EditorScrollableCompon
 import org.infernalstudios.questlog.client.gui.components.ScrollableComponent;
 import org.infernalstudios.questlog.compat.origins.OriginsClientHelper;
 import org.infernalstudios.questlog.core.DefinitionUtil;
+import org.infernalstudios.questlog.core.QuestText;
+import org.infernalstudios.questlog.core.validation.QuestDraftFields;
 import org.infernalstudios.questlog.core.quests.EditorMetadata;
 import org.infernalstudios.questlog.core.quests.EditorMetadata.SuggestionType;
 import org.infernalstudios.questlog.core.quests.Quest;
@@ -176,11 +178,16 @@ public class QuestEditorScreen extends Screen {
     private int typeListScroll = 0;
     private boolean typeListScrolling = false;
     private String tempId = "";
+    private ResourceLocation savedId;
+    private boolean saving;
     private String tempTitle = "";
     private String tempDescription = "";
     private String tempDetails = "";
     private String tempIconItem = "";
     private String tempChapter = "";
+    private String editingLanguage = LanguageSelectionScreen.playerLanguage();
+    private QuestText.Draft translatedTexts = new QuestText.Draft(new JsonObject(), QuestText.QUEST_FIELDS);
+    Button languageButton;
     private int tempSortOrder = 0;
     private int listPage = 0;
     private String typeSearchQuery = "";
@@ -205,6 +212,58 @@ public class QuestEditorScreen extends Screen {
         this.presetJson = presetJson;
 
         this.loadQuestData();
+        this.refreshAutomaticId();
+    }
+
+    boolean entryFieldRequired(net.minecraft.client.gui.components.AbstractWidget widget) {
+        EditorMetadata metadata = getMetadata(this.editingType);
+        if (metadata == null) return false;
+        if (widget == this.entryTargetBox) return metadata.targetRequired(this.activeTab == ActiveTab.REWARDS);
+        return widget == this.entryAmountBox && this.activeTab == ActiveTab.REWARDS && "experience".equals(metadata.amountFieldKey());
+    }
+
+    private static Screen pendingPrevious;
+    private static ResourceLocation pendingEdit;
+    public static void requestEdit(Screen previous, Quest quest) {
+        pendingPrevious = previous;
+        pendingEdit = quest.getId();
+        Services.PLATFORM.sendPacketToServer(new org.infernalstudios.questlog.network.packet.QuestAuthorPacket(quest.getId(), 0));
+    }
+    public static void acceptEdit(ResourceLocation id, boolean success) {
+        if (!id.equals(pendingEdit)) return;
+        Screen previous = pendingPrevious;
+        pendingEdit = null; pendingPrevious = null;
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (success && mc.screen == previous) {
+            Quest quest = org.infernalstudios.questlog.QuestlogClient.getLocal().getQuest(id);
+            if (quest != null) mc.setScreen(new QuestEditorScreen(previous, quest));
+        }
+    }
+    public void finishSave(ResourceLocation id, boolean success, boolean activationRequested, com.google.gson.JsonArray report) {
+        if (!this.saving) return;
+        this.saving = false;
+        if (!success) return;
+        this.savedId = id;
+        this.tempId = id.toString();
+        if (this.idBox != null) this.idBox.setValue(this.tempId);
+        var issues = new java.util.ArrayList<org.infernalstudios.questlog.core.validation.QuestValidation.Issue>();
+        for (var row : report) {
+            var issue = row.getAsJsonObject();
+            issues.add(new org.infernalstudios.questlog.core.validation.QuestValidation.Issue(issue.get("path").getAsString(),issue.get("message").getAsString(),issue.get("error").getAsBoolean()));
+        }
+        boolean showReport = new org.infernalstudios.questlog.core.validation.QuestValidation.Report(issues).showAfterSave(activationRequested);
+        this.minecraft.setScreen(showReport ? new QuestValidationScreen(this,report) : this.previousScreen);
+    }
+    private void refreshAutomaticId() {
+        if (this.savedId != null) { this.tempId = this.savedId.toString(); }
+        else {
+            String title = this.titleBox == null ? this.tempTitle : this.titleBox.getValue();
+            this.translatedTexts.put("title",this.editingLanguage,title);
+            title = this.translatedTexts.firstText("title");
+            String chapter = this.chapterBox == null ? this.tempChapter : this.chapterBox.getValue();
+            this.tempId = org.infernalstudios.questlog.core.QuestIdGenerator.next(chapter,title,DefinitionUtil::hasCachedQuest).toString();
+        }
+        if (this.idBox != null) this.idBox.setValue(this.tempId);
     }
 
     net.minecraft.client.gui.Font getFont() {
@@ -228,7 +287,8 @@ public class QuestEditorScreen extends Screen {
         }
 
         if (this.questToEdit != null) {
-            this.tempId = this.questToEdit.getId().toString();
+            this.savedId = this.questToEdit.getId();
+            this.tempId = this.savedId.toString();
             try {
                 JsonObject definition = DefinitionUtil.getCachedQuest(this.questToEdit.getId());
                 this.originalDefinition = definition.deepCopy();
@@ -237,20 +297,25 @@ public class QuestEditorScreen extends Screen {
                 Questlog.LOGGER.error("Failed to load quest definition for editing", e);
             }
         } else if (this.presetJson != null) {
-            this.tempId = "questlog:new_quest_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+            this.savedId = null;
             try {
                 this.originalDefinition = this.presetJson.deepCopy();
                 this.loadFromDefinition(this.presetJson);
+                this.tempSortOrder = DefinitionUtil.nextQuestOrder(this.tempChapter);
             } catch (Exception e) {
                 Questlog.LOGGER.error("Failed to load quest preset definition", e);
             }
         } else {
-            this.tempId = "questlog:new_quest_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-            this.tempTitle = "New Quest";
-            this.tempDescription = "Describe your quest here...";
+            this.savedId = null;
+            this.translatedTexts = new QuestText.Draft(new JsonObject(),QuestText.QUEST_FIELDS);
+            this.editingLanguage = LanguageSelectionScreen.playerLanguage();
+            this.tempTitle = "";
+            this.tempDescription = "";
             this.tempIconItem = "minecraft:knowledge_book";
-            this.tempChapter = "main";
-            this.tempSortOrder = 0;
+            ResourceLocation selectedChapter = this.previousScreen instanceof QuestlogScreen journal
+                    ? journal.getCurrentChapter() : null;
+            this.tempChapter = selectedChapter != null ? selectedChapter.toString() : "main";
+            this.tempSortOrder = DefinitionUtil.nextQuestOrder(this.tempChapter);
             this.tempObjectives.clear();
             this.tempPrerequisites.clear();
             this.tempRewards.clear();
@@ -262,11 +327,11 @@ public class QuestEditorScreen extends Screen {
     }
 
     private void loadFromDefinition(JsonObject definition) {
-        this.tempTitle = definition.has("title") ? definition.get("title").getAsString() : "";
-        this.tempDescription = definition.has("description") ? definition.get("description").getAsString() : "";
-        JsonElement details = definition.get("details");
-        this.tempDetails = details == null || details.isJsonNull() ? ""
-                : details.isJsonPrimitive() ? details.getAsString() : details.toString();
+        this.translatedTexts = new QuestText.Draft(definition,QuestText.QUEST_FIELDS);
+        this.editingLanguage = this.translatedTexts.initialLanguage(LanguageSelectionScreen.playerLanguage());
+        this.tempTitle = translatedTexts.read("title",editingLanguage);
+        this.tempDescription = translatedTexts.read("description",editingLanguage);
+        this.tempDetails = translatedTexts.read("details",editingLanguage);
 
         if (definition.has("icon") && definition.get("icon").isJsonObject()) {
             JsonObject iconObj = definition.getAsJsonObject("icon");
@@ -278,17 +343,20 @@ public class QuestEditorScreen extends Screen {
             }
         }
 
-        this.tempChapter = definition.has("chapter") ? definition.get("chapter").getAsString() : "main";
-        this.tempSortOrder = definition.has("sort_order") ? definition.get("sort_order").getAsInt() : (definition.has("order") ? definition.get("order").getAsInt() : 0);
+        this.tempChapter = QuestDraftFields.text(definition,"chapter","main");
+        try { this.tempSortOrder = definition.has("sort_order") ? definition.get("sort_order").getAsInt() : (definition.has("order") ? definition.get("order").getAsInt() : 0); }
+        catch (RuntimeException malformed) { this.tempSortOrder = 0; }
 
         for (BoolFieldDef def : BOOL_FIELDS) {
             boolean defaultVal = getBoolDefault(def);
-            this.tempBooleans.put(def.key(), definition.has(def.key()) ? definition.get(def.key()).getAsBoolean() : defaultVal);
+            this.tempBooleans.put(def.key(), definition.has(def.key()) && definition.get(def.key()).isJsonPrimitive() && definition.getAsJsonPrimitive(def.key()).isBoolean() ? definition.get(def.key()).getAsBoolean() : defaultVal);
         }
-        this.tempRewardPreviewOverride = definition.has(REWARD_PREVIEW_KEY)
-                ? JsonUtils.getBoolean(definition, REWARD_PREVIEW_KEY) : null;
+        this.tempRewardPreviewOverride = definition.has(REWARD_PREVIEW_KEY) && definition.get(REWARD_PREVIEW_KEY).isJsonPrimitive() && definition.getAsJsonPrimitive(REWARD_PREVIEW_KEY).isBoolean()
+                ? definition.get(REWARD_PREVIEW_KEY).getAsBoolean() : null;
         for (TextFieldDef def : TEXT_FIELDS) {
-            if (definition.has(def.key()) && !definition.get(def.key()).isJsonNull()) {
+            if (QuestText.QUEST_FIELDS.contains(def.key())) {
+                this.tempTexts.put(def.key(),translatedTexts.read(def.key(),editingLanguage));
+            } else if (definition.has(def.key()) && !definition.get(def.key()).isJsonNull()) {
                 JsonElement el = definition.get(def.key());
                 this.tempTexts.put(def.key(), el.isJsonPrimitive() ? el.getAsString() : el.toString());
             } else {
@@ -296,10 +364,10 @@ public class QuestEditorScreen extends Screen {
             }
         }
 
-        this.loadList(definition.getAsJsonArray("objectives"), this.tempObjectives);
-        this.loadList(definition.has("prerequisites") ? definition.getAsJsonArray("prerequisites") : definition.getAsJsonArray("requirements"), this.tempPrerequisites);
-        this.loadList(definition.getAsJsonArray("failures"), null);
-        this.loadList(definition.getAsJsonArray("rewards"), this.tempRewards);
+        this.loadList(QuestDraftFields.array(definition,"objectives"), this.tempObjectives);
+        this.loadList(definition.has("prerequisites") ? QuestDraftFields.array(definition,"prerequisites") : QuestDraftFields.array(definition,"requirements"), this.tempPrerequisites);
+        this.loadList(QuestDraftFields.array(definition,"failures"), null);
+        this.loadList(QuestDraftFields.array(definition,"rewards"), this.tempRewards);
     }
 
     private void loadList(@Nullable JsonArray array, List<JsonObject> target) {
@@ -336,9 +404,9 @@ public class QuestEditorScreen extends Screen {
         this.bgRight = new NineSliceTexture(QuestlogGuiSet.DEFAULT.rightPanelLoc, rightWidth, height, 375, 174, 275, 166, 1024, 512, 16, 16);
 
         this.idBox = new NoShadowEditBox(this.font, baseX + 15, baseY + 22, 195, 16, Component.empty());
-        this.idBox.setMaxLength(64);
+        this.idBox.setMaxLength(160);
         this.idBox.setValue(this.tempId);
-        this.idBox.setEditable(this.questToEdit == null);
+        this.idBox.setEditable(false);
         this.idBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.id")));
 
         this.titleBox = new NoShadowEditBox(this.font, baseX + 15, baseY + 54, 195, 16, Component.empty());
@@ -346,6 +414,7 @@ public class QuestEditorScreen extends Screen {
         this.titleBox.setMaxLength(Math.max(50, this.tempTitle.length()));
         this.titleBox.setValue(this.tempTitle);
         this.titleBox.setFilter(candidate -> acceptsTitleChange(this.titleBox.getValue(), candidate));
+        this.titleBox.setResponder(value -> refreshAutomaticId());
         this.titleBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.title")));
 
         this.descriptionBox = new QuestTextEditBox(this.font, baseX + 15, baseY + 86, 195, 54);
@@ -366,6 +435,7 @@ public class QuestEditorScreen extends Screen {
         this.chapterBox = new NoShadowEditBox(this.font, baseX + 15, baseY + 188, 130, 16, Component.empty());
         this.chapterBox.setMaxLength(64);
         this.chapterBox.setValue(this.tempChapter);
+        this.chapterBox.setResponder(value -> refreshAutomaticId());
         this.chapterBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.chapter")));
 
         this.orderBox = new NoShadowEditBox(this.font, baseX + 165, baseY + 188, 50, 16, Component.empty());
@@ -376,6 +446,12 @@ public class QuestEditorScreen extends Screen {
 
         this.leftFields.clear();
         this.leftFields.add(this.idBox);
+        this.languageButton = Button.builder(LanguageSelectionScreen.label(editingLanguage),button -> {
+            this.saveTemporaryState();
+            if (this.rightPageState == RightPageState.EDIT_ENTRY && this.editingEntry != null) this.saveEditingEntry();
+            this.minecraft.setScreen(new LanguageSelectionScreen(this,editingLanguage,this::switchLanguage));
+        }).bounds(baseX+15,baseY+52,195,16).build();
+        this.leftFields.add(this.languageButton);
         this.leftFields.add(this.titleBox);
         this.leftFields.add(this.descriptionBox);
         this.leftFields.add(this.detailsBox);
@@ -394,6 +470,10 @@ public class QuestEditorScreen extends Screen {
             this.buildRightPageEditEntry(panel2X, baseY);
         }
 
+        this.addRenderableWidget(Button.builder(Component.translatable("questlog.author.activate"), button -> {
+            this.saveTemporaryState(); this.saveQuestToServer(true);
+        }).bounds(baseX, baseY - 24, 155, 20).build());
+
         int btnWidth = 100;
         int bottomY = baseY + height + 10;
 
@@ -411,8 +491,10 @@ public class QuestEditorScreen extends Screen {
         if (this.questToEdit != null) {
             Button btnDuplicate = Button.builder(Component.translatable("questlog.editor.duplicate"), btn -> {
                 this.saveTemporaryState();
-                this.tempId = this.tempId + "_copy";
+                this.savedId = null;
                 this.questToEdit = null;
+                this.tempSortOrder = DefinitionUtil.nextQuestOrder(this.tempChapter);
+                this.refreshAutomaticId();
                 this.rebuildWidgets();
             }).bounds(panel2X, bottomY, 75, 20).build();
             btnDuplicate.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.duplicate_quest")));
@@ -715,7 +797,7 @@ public class QuestEditorScreen extends Screen {
     private void buildRightPageEditEntry(int panel2X, int panel2Y) {
         this.entryNameBox = new NoShadowEditBox(this.font, 0, 0, 125, 14, Component.empty());
         this.entryNameBox.setMaxLength(64);
-        String nameVal = this.editingEntry != null && this.editingEntry.has("name") ? this.editingEntry.get("name").getAsString() : "";
+        String nameVal = this.editingEntry == null ? "" : QuestDraftFields.text(this.editingEntry,QuestText.key("name",editingLanguage),"");
         this.entryNameBox.setValue(nameVal);
         this.entryNameBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.entry_name")));
 
@@ -784,8 +866,7 @@ public class QuestEditorScreen extends Screen {
                 this.entryAmountBox = new NoShadowEditBox(this.font, 0, 0, 50, 14, Component.empty());
                 this.entryAmountBox.setMaxLength(6);
                 this.entryAmountBox.setFilter(s -> s.isEmpty() || s.matches("\\d*"));
-                int amtVal = getAmountValue();
-                this.entryAmountBox.setValue(String.valueOf(amtVal));
+                this.entryAmountBox.setValue(getAmountText());
                 this.entryAmountBox.setTooltip(Tooltip.create(Component.translatable(amountTooltipKey)));
             } else {
                 this.entryAmountBox = null;
@@ -829,8 +910,7 @@ public class QuestEditorScreen extends Screen {
                 this.entryAmountBox = new NoShadowEditBox(this.font, 0, 0, 50, 14, Component.empty());
                 this.entryAmountBox.setMaxLength(6);
                 this.entryAmountBox.setFilter(s -> s.isEmpty() || s.matches("\\d*"));
-                int amtVal = getAmountValue();
-                this.entryAmountBox.setValue(String.valueOf(amtVal));
+                this.entryAmountBox.setValue(getAmountText());
                 this.entryAmountBox.setTooltip(Tooltip.create(Component.translatable(amountTooltipKey)));
             } else {
                 this.entryAmountBox = null;
@@ -949,31 +1029,16 @@ public class QuestEditorScreen extends Screen {
         return "";
     }
 
-    private int getAmountValue() {
-        if (this.editingEntry == null) return 1;
+    private String getAmountText() {
+        if (this.editingEntry == null) return "1";
         EditorMetadata meta = getMetadata(this.editingType);
         if (meta != null && meta.amountFieldKey() != null) {
             String key = meta.amountFieldKey();
-            if (this.editingEntry.has(key)) {
-                return this.editingEntry.get(key).getAsInt();
-            }
+            return QuestDraftFields.text(this.editingEntry,key,key.equals("experience") ? "" : key.equals("range") ? "5" : "1");
         }
-        if (this.editingEntry.has("range")) {
-            return this.editingEntry.get("range").getAsInt();
-        }
-        if (this.editingEntry.has("required_amount")) {
-            return this.editingEntry.get("required_amount").getAsInt();
-        }
-        if (this.editingEntry.has("count")) {
-            return this.editingEntry.get("count").getAsInt();
-        }
-        if (this.editingEntry.has("experience")) {
-            return this.editingEntry.get("experience").getAsInt();
-        }
-        if (meta != null && "range".equals(meta.amountFieldKey())) {
-            return 5;
-        }
-        return 1;
+        for (String key : List.of("range","required_amount","count","experience"))
+            if (this.editingEntry.has(key)) return QuestDraftFields.text(this.editingEntry,key,"");
+        return "1";
     }
 
     private String getIconFieldValue() {
@@ -1076,19 +1141,13 @@ public class QuestEditorScreen extends Screen {
         String slot = this.entrySlotBox != null ? this.entrySlotBox.getValue().trim() : "";
         String components = this.entryComponentsBox != null ? this.entryComponentsBox.getValue().trim() : "";
         String icon = this.entryIconBox != null ? this.entryIconBox.getValue().trim() : "";
-        int amount = 1;
-        if (this.entryAmountBox != null) {
-            try {
-                amount = Integer.parseInt(this.entryAmountBox.getValue());
-            } catch (NumberFormatException ignored) {
-            }
-        }
+        String amount = this.entryAmountBox == null ? "" : this.entryAmountBox.getValue();
 
         this.editingEntry.addProperty("type", this.editingType);
         if (!name.isEmpty()) {
-            this.editingEntry.addProperty("name", name);
+            this.editingEntry.addProperty(QuestText.key("name",editingLanguage), name);
         } else {
-            this.editingEntry.remove("name");
+            this.editingEntry.remove(QuestText.key("name",editingLanguage));
         }
 
         this.editingEntry.remove("icon");
@@ -1164,14 +1223,14 @@ public class QuestEditorScreen extends Screen {
                 }
             }
             if (meta.amountFieldKey() != null) {
-                this.editingEntry.addProperty(meta.amountFieldKey(), amount);
+                QuestDraftFields.putInteger(this.editingEntry, meta.amountFieldKey(), amount);
             }
             if ("questlog:experience".equals(this.editingType)) {
                 this.editingEntry.addProperty("levels", this.entryLevelsToggle);
             }
         } else {
             if (this.activeTab == ActiveTab.OBJECTIVES || this.activeTab == ActiveTab.PREREQUISITES) {
-                this.editingEntry.addProperty("required_amount", amount);
+                QuestDraftFields.putInteger(this.editingEntry, "required_amount", amount);
             }
         }
 
@@ -1281,9 +1340,7 @@ public class QuestEditorScreen extends Screen {
                 this.tempSortOrder = 0;
             }
         }
-        if (this.idBox != null) {
-            this.tempId = this.idBox.getValue();
-        }
+        this.refreshAutomaticId();
         if (this.typeSearchBox != null) {
             this.typeSearchQuery = this.typeSearchBox.getValue();
             this.tempSearchFocused = this.typeSearchBox.isFocused();
@@ -1301,6 +1358,26 @@ public class QuestEditorScreen extends Screen {
                 this.tempTexts.put(TEXT_FIELDS.get(i).key(), box.getValue());
             }
         }
+        this.storeTranslatedTexts();
+    }
+    String editingLanguage() { return this.editingLanguage; }
+
+    void switchLanguage(String language) {
+        this.editingLanguage = language;
+        this.tempTitle = translatedTexts.read("title",language);
+        this.tempDescription = translatedTexts.read("description",language);
+        this.tempDetails = translatedTexts.read("details",language);
+        for (TextFieldDef field : TEXT_FIELDS) if (QuestText.QUEST_FIELDS.contains(field.key()))
+            this.tempTexts.put(field.key(),translatedTexts.read(field.key(),language));
+        // Widgets are rebuilt when Minecraft reopens this screen; no inherited text is copied into the new language.
+    }
+
+    private void storeTranslatedTexts() {
+        translatedTexts.put("title",editingLanguage,tempTitle);
+        translatedTexts.put("description",editingLanguage,tempDescription);
+        translatedTexts.put("details",editingLanguage,tempDetails);
+        for (TextFieldDef field : TEXT_FIELDS) if (QuestText.QUEST_FIELDS.contains(field.key()))
+            translatedTexts.put(field.key(),editingLanguage,tempTexts.getOrDefault(field.key(),""));
     }
 
     private void setBooleanFlag(JsonObject json, String key, boolean value, boolean defaultValue) {
@@ -1338,30 +1415,12 @@ public class QuestEditorScreen extends Screen {
         }
     }
 
-    private void saveQuestToServer() {
+    private JsonObject buildDefinition() {
+        if (this.rightPageState == RightPageState.EDIT_ENTRY && this.editingEntry != null) this.saveEditingEntry();
         JsonObject json = this.originalDefinition != null ? this.originalDefinition.deepCopy() : new JsonObject();
 
-        json.addProperty("title", this.tempTitle);
-        json.addProperty("description", this.tempDescription);
-        String trimmed = this.tempDetails == null ? "" : this.tempDetails.trim();
-        if (trimmed.isEmpty()) {
-            json.remove("details");
-        } else {
-            JsonElement component = null;
-            if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
-                try {
-                    component = JsonParser.parseString(trimmed);
-                } catch (RuntimeException ignored) {
-                    // Inline links and ordinary text are stored as strings.
-                }
-            }
-            if (component != null && (component.isJsonObject() || component.isJsonArray())) {
-                json.add("details", component);
-            } else {
-                json.addProperty("details", this.tempDetails);
-            }
-        }
-
+        this.storeTranslatedTexts();
+        this.translatedTexts.apply(json);
 
         JsonObject iconObj = json.has("icon") && json.get("icon").isJsonObject() ? json.getAsJsonObject("icon") : new JsonObject();
         if (this.tempIconItem.trim().startsWith("{") && this.tempIconItem.trim().endsWith("}")) {
@@ -1391,6 +1450,7 @@ public class QuestEditorScreen extends Screen {
         }
         for (TextFieldDef def : TEXT_FIELDS) {
             String value = this.tempTexts.getOrDefault(def.key(), def.defaultValue());
+            if (QuestText.QUEST_FIELDS.contains(def.key())) continue;
             if (def.numeric()) {
                 setIntOrRemove(json, def.key(), value, def.defaultValue());
             } else {
@@ -1417,16 +1477,22 @@ public class QuestEditorScreen extends Screen {
         }
         json.add("rewards", rewArr);
 
-        ResourceLocation rl = ResourceLocation.tryParse(this.tempId);
-        if (rl == null) {
-            rl = ResourceLocation.fromNamespaceAndPath(Questlog.MODID, this.tempId.replace(":", "_"));
-        }
+        json.remove("_validation_error");
+        return json;
+    }
 
-        Services.PLATFORM.sendPacketToServer(new QuestEditSavePacket(rl, json.toString()));
-
-        if (this.minecraft != null) {
-            this.minecraft.setScreen(this.previousScreen);
+    private void saveQuestToServer() { saveQuestToServer(false); }
+    private void saveQuestToServer(boolean activate) {
+        if (this.saving) return;
+        this.refreshAutomaticId();
+        ResourceLocation id = ResourceLocation.tryParse(this.tempId);
+        if (id == null || !id.getNamespace().equals(Questlog.MODID)) {
+            this.minecraft.player.displayClientMessage(Component.translatable("questlog.validation.id"),false); return;
         }
+        JsonObject definition = buildDefinition();
+        definition.addProperty("active", activate);
+        this.saving = true;
+        Services.PLATFORM.sendPacketToServer(new QuestEditSavePacket(id, definition.toString(), this.savedId == null));
     }
 
     private void deleteQuestOnServer() {

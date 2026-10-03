@@ -17,6 +17,7 @@ public class ExperienceReward extends Reward {
 
     @Override
     public void applyReward(ServerPlayer player) {
+        if (this.getParent() != null && !this.getParent().isActive()) return;
         if (this.levels) {
             player.giveExperienceLevels(this.experience);
         } else {

@@ -1,0 +1,8 @@
+{
+  "name": "Tests : suivi et validation",
+  "icon": {
+    "item": "minecraft:compass"
+  },
+  "order": 90,
+  "hidden": false
+}

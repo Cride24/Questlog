@@ -23,6 +23,8 @@ public record QuestReadPacket(ResourceLocation id) implements CustomPacketPayloa
 
     public static void handle(QuestReadPacket packet, IPacketContext ctx) {
         QuestManager manager = ServerPlayerManager.INSTANCE.getManagerByPlayer(Objects.requireNonNull(ctx.getSender()));
+        var quest = manager.getQuest(packet.id);
+        if (quest == null || !quest.isActive() || !quest.isTriggered()) return;
         Questlog.EVENTS.post(new QuestEvent.Read(manager.player, manager.getQuest(packet.id), true));
     }
 

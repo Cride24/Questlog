@@ -22,7 +22,7 @@ class LeftPanelScrollable implements Scrollable, GuiEventListener, NarratableEnt
 
     @Override
     public int getHeight() {
-        return 270;
+        return 302;
     }
 
     @Override
@@ -49,23 +49,26 @@ class LeftPanelScrollable implements Scrollable, GuiEventListener, NarratableEnt
         screen.idBox.setX(startX + 5);
         screen.idBox.setY(startY + 10 - scroll);
 
+        if (screen.languageButton != null) {
+            screen.languageButton.setX(startX+5); screen.languageButton.setY(startY+42-scroll);
+        }
         screen.titleBox.setX(startX + 5);
-        screen.titleBox.setY(startY + 42 - scroll);
+        screen.titleBox.setY(startY + 74 - scroll);
 
         screen.descriptionBox.setX(startX + 5);
-        screen.descriptionBox.setY(startY + 74 - scroll);
+        screen.descriptionBox.setY(startY + 106 - scroll);
 
         screen.detailsBox.setX(startX + 5);
-        screen.detailsBox.setY(startY + 144 - scroll);
+        screen.detailsBox.setY(startY + 176 - scroll);
 
         screen.iconBox.setX(startX + 5);
-        screen.iconBox.setY(startY + 214 - scroll);
+        screen.iconBox.setY(startY + 246 - scroll);
 
         screen.chapterBox.setX(startX + 5);
-        screen.chapterBox.setY(startY + 246 - scroll);
+        screen.chapterBox.setY(startY + 278 - scroll);
 
         screen.orderBox.setX(startX + 155);
-        screen.orderBox.setY(startY + 246 - scroll);
+        screen.orderBox.setY(startY + 278 - scroll);
 
         int absMouseX = mouseX + (int) this.scroller.getXOffset();
         int absMouseY = mouseY + (int) this.scroller.getYOffset();
@@ -76,12 +79,13 @@ class LeftPanelScrollable implements Scrollable, GuiEventListener, NarratableEnt
 
         int color = Questlog.getConfig().colors.textColor | 0xFF000000;
         ps.drawString(screen.getFont(), Component.translatable("questlog.editor.id"), startX + 5, startY - scroll, color, false);
-        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.title_label"), startX + 5, startY + 32 - scroll, color, false);
-        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.description_label"), startX + 5, startY + 64 - scroll, color, false);
-        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.advanced.details"), startX + 5, startY + 134 - scroll, color, false);
-        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.icon_label"), startX + 5, startY + 204 - scroll, color, false);
-        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.chapter_label"), startX + 5, startY + 236 - scroll, color, false);
-        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.order_label"), startX + 155, startY + 236 - scroll, color, false);
+        ps.drawString(screen.getFont(),Component.translatable("questlog.editor.language"),startX+5,startY+32-scroll,color,false);
+        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.title_label").append(Component.translatable("questlog.validation.required_marker")), startX + 5, startY + 64 - scroll, screen.titleBox.getValue().isBlank() ? 0xFFAA0000 : color, false);
+        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.description_label").append(Component.translatable("questlog.validation.required_marker")), startX + 5, startY + 96 - scroll, screen.descriptionBox.getValue().isBlank() ? 0xFFAA0000 : color, false);
+        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.advanced.details"), startX + 5, startY + 166 - scroll, color, false);
+        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.icon_label"), startX + 5, startY + 236 - scroll, color, false);
+        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.chapter_label"), startX + 5, startY + 268 - scroll, color, false);
+        ps.drawString(screen.getFont(), Component.translatable("questlog.editor.order_label"), startX + 155, startY + 268 - scroll, color, false);
 
         for (AbstractWidget widget : screen.leftFields) {
             widget.render(ps, renderMouseX, renderMouseY, partialTicks);
@@ -101,7 +105,7 @@ class LeftPanelScrollable implements Scrollable, GuiEventListener, NarratableEnt
         boolean anyClicked = false;
         AbstractWidget clickedWidget = null;
         for (AbstractWidget widget : screen.leftFields) {
-            boolean canClick = (widget != screen.idBox) || (screen.questToEdit == null);
+            boolean canClick = widget != screen.idBox;
             if (canClick && widget.mouseClicked(absoluteX, absoluteY, button)) {
                 anyClicked = true;
                 clickedWidget = widget;

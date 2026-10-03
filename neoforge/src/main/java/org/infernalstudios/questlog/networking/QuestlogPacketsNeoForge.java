@@ -11,8 +11,13 @@ import org.infernalstudios.questlog.network.packet.*;
 public class QuestlogPacketsNeoForge {
 
     public static void register(RegisterPayloadHandlersEvent event) {
-        final PayloadRegistrar registrar = event.registrar(Questlog.MODID).versioned("1.0");
+        final PayloadRegistrar registrar = event.registrar(Questlog.MODID).versioned("2.2");
 
+        registrar.playToServer(QuestAuthorPacket.TYPE, QuestAuthorPacket.STREAM_CODEC, (payload, context) -> context.enqueueWork(() -> QuestAuthorPacket.handle(payload, createServerContext(context.player()))));
+        registrar.playToClient(QuestAuthorResultPacket.TYPE, QuestAuthorResultPacket.STREAM_CODEC, (payload, context) -> context.enqueueWork(() -> ClientPacketHandler.handle(payload, createClientContext())));
+
+        registrar.playToServer(QuestTrackingUpdatePacket.TYPE, QuestTrackingUpdatePacket.STREAM_CODEC, (payload, context) -> context.enqueueWork(() -> QuestTrackingUpdatePacket.handle(payload, createServerContext(context.player()))));
+        registrar.playToClient(QuestTrackingPacket.TYPE, QuestTrackingPacket.STREAM_CODEC, (payload, context) -> context.enqueueWork(() -> ClientPacketHandler.handle(payload, createClientContext())));
         // Client to Server
         registrar.playToServer(QuestRewardCollectPacket.TYPE, QuestRewardCollectPacket.STREAM_CODEC, (payload, context) ->
                 context.enqueueWork(() -> QuestRewardCollectPacket.handle(payload, createServerContext(context.player())))

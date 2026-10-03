@@ -1,0 +1,23 @@
+{
+  "title-fr_fr": "Une quête bilingue",
+  "description-fr_fr": "Ouvre cette quête pour lire ses trois étapes. Survole [une bûche de chêne](item:minecraft:oak_log).",
+  "title-en_us": "A bilingual quest",
+  "description-en_us": "Open this quest to read its three steps. Hover over [an oak log](item:minecraft:oak_log).",
+  "details-fr_fr": "Ce détail n’a volontairement pas de traduction anglaise : le texte français sert de repli.",
+  "description_completed-fr_fr": "Lecture terminée ! Récupère ta récompense.",
+  "description_completed-en_us": "Reading complete! Collect your reward.",
+  "back_button_text-fr_fr": "Retour",
+  "back_button_text-en_us": "Back",
+  "collect_button_text-fr_fr": "Récupérer",
+  "collect_button_text-en_us": "Collect",
+  "chapter": "questlog:multilingual_demo",
+  "sort_order": 0,
+  "active": true,
+  "icon": { "item": "minecraft:book" },
+  "objectives": [
+    { "type": "read", "required_amount": 3, "name-fr_fr": "Lire les trois étapes", "name-en_us": "Read the three steps" }
+  ],
+  "rewards": [
+    { "type": "experience", "experience": 2, "name-fr_fr": "Deux points d’expérience", "name-en_us": "Two experience points" }
+  ]
+}

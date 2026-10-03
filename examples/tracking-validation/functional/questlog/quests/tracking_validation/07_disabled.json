@@ -1,0 +1,21 @@
+{
+  "title": "Quête désactivée",
+  "description": "Quête de test isolée. Suivez-la avant de réaliser son objectif.",
+  "chapter": "tracking_validation",
+  "sort_order": 6,
+  "icon": {
+    "item": "minecraft:compass"
+  },
+  "objectives": [
+    {
+      "type": "questlog:read"
+    }
+  ],
+  "rewards": [
+    {
+      "type": "questlog:experience",
+      "experience": 5
+    }
+  ],
+  "active": false
+}

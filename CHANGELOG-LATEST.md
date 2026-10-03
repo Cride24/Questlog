@@ -1,22 +1,27 @@
 ### Added
 
-- Added item tooltips for inline item links in quest text and for objectives with a specific item, with a client option to disable them.
-- Added optional recipe clicks for those item links and objective names when EMI or JEI is installed.
-- Added optional `details` text on a separate quest page, with a matching field in the in-game editor.
-- Added optional reward previews below objectives before quest completion. Previews are off by default and can be overridden per quest.
-- Added mouse wheel navigation to the in-game editor's autocomplete lists while keeping click and keyboard selection.
+- Added inline quest/chapter translations, searchable in-game language selection, per-field US-English/authored-order fallback and legacy None mode.
+- Added a personal quest tracking overlay with server-side order and local window geometry, passive during gameplay and interactive in Minecraft chat.
+- Added author validation for required fields, registered types, values and available references, with clickable in-game reports and optional-field markers.
+- Added explicit draft saving and activation, plus isolated functional and intentionally malformed test examples.
 
 ### Changed
 
-- Quest titles display on at most two lines; newly entered titles are limited to 50 characters. Objective and reward names continue to wrap within their panels.
-- Moved the Collect action below the rewards panel so the quest navigation button remains available while rewards are unclaimed.
-- Included the Objectives heading in the right panel's scrolling area.
+- Editing deactivates a quest on the server until the author explicitly reactivates it. Incomplete drafts retain saved progression; unchanged entries recover their state after reordering.
+- Disabled quests stay followed in grey. Completed quests move after incomplete quests and leave tracking once all rewards are collected, or immediately when no rewards exist.
+- Updated the NeoForge network protocol to 2.2 for inline-language definitions in the development build.
 
 ### Fixed
 
-- Ignored malformed hover-image links instead of crashing when quest text is hovered.
-- Fixed independent scrolling for the Description and Details fields in the quest editor.
-- Resolved translated quest descriptions and details using the current client language, including inline item links.
-- Centered reward icons on the first line of their names in the right panel.
-- Enforced the 50-character title limit while editing without truncating existing longer titles.
-- Aligned iconless reward choices with icon-bearing choices and corrected the Choice and Experience editor button positions.
+- Opened quest/chapter editors in the player language for new definitions, or the sole authored language then player/US-English/JSON-order priority for existing definitions; language buttons now show Minecraft language names and regions.
+- Made the whole brown tracking frame capture resizing, added the journal heading separator and previewed quest reordering continuously while dragging.
+- Prefilled new quest ordering after the highest order in the selected chapter, including inactive drafts and legacy ordering values.
+- Prefilled new quests with the chapter currently selected in the journal, including their automatic identity preview.
+- Restyled the Follow button and tracking overlay using Questlog textures, with configurable background/frame opacity.
+- Fixed dragging in chat by checking the physical mouse button instead of the gameplay-only MouseHandler state.
+- Hid inactive/nonfunctional followed quests outside author mode while preserving their personal order.
+- Moved required markers after field labels and removed optional markers; new titles and required descriptions start empty.
+- Added automatic read-only quest identities allocated by the server on first save and retained on subsequent edits.
+- Made draft validation silent and returned failed activation reports to the same editor; removed the analysis buttons.
+- Prevented inactive quests from accepting normal progress, reading, resets and reward collection.
+- Kept malformed ordering/title values and absent quest references accessible to validation.

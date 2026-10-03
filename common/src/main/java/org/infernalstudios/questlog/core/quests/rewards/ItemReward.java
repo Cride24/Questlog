@@ -87,6 +87,7 @@ public class ItemReward extends Reward {
 
     @Override
     public void applyReward(ServerPlayer player) {
+        if (this.getParent() != null && !this.getParent().isActive()) return;
         ItemStack itemStack = this.stack.get();
         if (!itemStack.isEmpty()) {
             Util.giveToPlayer(player, itemStack.copy());
