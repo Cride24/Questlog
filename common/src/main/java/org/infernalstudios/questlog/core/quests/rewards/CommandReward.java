@@ -18,6 +18,7 @@ public class CommandReward extends Reward {
 
     @Override
     public void applyReward(ServerPlayer player) {
+        if (this.getParent() != null && !this.getParent().isActive()) return;
         CommandSourceStack source = player
                 .createCommandSourceStack()
                 .withEntity(player)

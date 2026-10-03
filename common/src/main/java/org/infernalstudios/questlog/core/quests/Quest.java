@@ -32,6 +32,10 @@ public class Quest implements NbtSaveable, WithDisplayData<QuestDisplayData> {
     public boolean hasSentTrigger = false;
     private boolean repeatable = false;
     private boolean global = false;
+    private boolean active = true;
+    private boolean functional = true;
+    private JsonObject definition;
+    private CompoundTag suspendedProgress;
 
     public Quest(
             QuestDisplayData display,
@@ -117,7 +121,12 @@ public class Quest implements NbtSaveable, WithDisplayData<QuestDisplayData> {
         boolean repeatable = JsonUtils.getOrDefault(definition, "repeatable", false);
         boolean global = JsonUtils.getOrDefault(definition, "global", false);
 
-        return new Quest(display, prerequisites, objectives, failureConditions, rewards, id, manager, repeatable, global);
+        Quest quest = new Quest(display, prerequisites, objectives, failureConditions, rewards, id, manager, repeatable, global);
+        quest.active = JsonUtils.getOrDefault(definition, "active", true);
+        quest.functional = !definition.has("_functional") || !definition.get("_functional").isJsonPrimitive() || !definition.getAsJsonPrimitive("_functional").isBoolean() || definition.get("_functional").getAsBoolean();
+        if (!quest.functional) quest.active = false;
+        quest.definition = definition.deepCopy();
+        return quest;
     }
 
     public ResourceLocation getId() {
@@ -127,6 +136,11 @@ public class Quest implements NbtSaveable, WithDisplayData<QuestDisplayData> {
     public boolean isRepeatable() {
         return this.repeatable;
     }
+
+    public boolean isFunctional() { return this.functional; }
+    public void setFunctional(boolean functional) { this.functional = functional; }
+    public boolean isActive() { return this.active; }
+    public void setActive(boolean active) { this.active = active; }
 
     public boolean isGlobal() {
         return this.global;
@@ -228,6 +242,10 @@ public class Quest implements NbtSaveable, WithDisplayData<QuestDisplayData> {
 
     @Override
     public void deserialize(CompoundTag data) {
+        if (!this.active) this.suspendedProgress = data.copy();
+        else if (this.definition != null && data.contains("_structure")) {
+            data = restoreMatchingEntries(data);
+        }
         this.hasSentCompletion = data.getBoolean("completed");
         this.hasSentTrigger = data.getBoolean("triggered");
 
@@ -259,6 +277,7 @@ public class Quest implements NbtSaveable, WithDisplayData<QuestDisplayData> {
 
     @Override
     public CompoundTag serialize() {
+        if (!this.active && this.suspendedProgress != null) return this.suspendedProgress.copy();
         CompoundTag tag = new CompoundTag();
         tag.putBoolean("completed", this.hasSentCompletion);
         tag.putBoolean("triggered", this.hasSentTrigger);
@@ -266,6 +285,48 @@ public class Quest implements NbtSaveable, WithDisplayData<QuestDisplayData> {
         tag.put("objectives", Util.toNbtList(this.objectives, Objective::serialize));
         tag.put("failures", Util.toNbtList(this.failureConditions, Objective::serialize));
         tag.put("rewards", Util.toNbtList(this.rewards, Reward::serialize));
+        if (this.definition != null) tag.putString("_structure", structure().toString());
         return tag;
+    }
+
+    private JsonObject structure() {
+        JsonObject result = new JsonObject();
+        for (String key : java.util.List.of("prerequisites", "objectives", "failures", "rewards")) {
+            String source = key.equals("prerequisites") && !this.definition.has(key) ? "requirements" : key;
+            result.add(key, this.definition.has(source) ? org.infernalstudios.questlog.core.QuestText.gameplay(this.definition.get(source)) : new JsonArray());
+        }
+        return result;
+    }
+
+    /** Avoid transferring an old counter/reward to a different entry after an author reorder. */
+    private CompoundTag restoreMatchingEntries(CompoundTag saved) {
+        try {
+            JsonObject old = org.infernalstudios.questlog.core.QuestText.gameplay(com.google.gson.JsonParser.parseString(saved.getString("_structure"))).getAsJsonObject();
+            JsonObject current = structure();
+            CompoundTag restored = saved.copy();
+            for (String key : java.util.List.of("prerequisites", "objectives", "failures", "rewards")) {
+                if (!old.has(key) || !old.get(key).isJsonArray() || !current.get(key).isJsonArray()) continue;
+                JsonArray previous = old.getAsJsonArray(key), next = current.getAsJsonArray(key);
+                if (previous.equals(next)) continue;
+                var tags = saved.getList(key, Tag.TAG_COMPOUND);
+                var matched = new net.minecraft.nbt.ListTag();
+                boolean[] used = new boolean[previous.size()];
+                for (JsonElement entry : next) {
+                    CompoundTag progress = new CompoundTag();
+                    for (int i = 0; i < previous.size(); i++) {
+                        if (!used[i] && entry.equals(previous.get(i))) {
+                            used[i] = true;
+                            if (i < tags.size()) progress = tags.getCompound(i).copy();
+                            break;
+                        }
+                    }
+                    matched.add(progress);
+                }
+                restored.put(key, matched);
+                if (key.equals("prerequisites")) restored.putBoolean("triggered", false);
+                if (key.equals("objectives") || key.equals("failures")) restored.putBoolean("completed", false);
+            }
+            return restored;
+        } catch (RuntimeException ignored) { return saved; }
     }
 }

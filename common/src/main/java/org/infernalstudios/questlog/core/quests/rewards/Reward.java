@@ -53,6 +53,7 @@ public abstract class Reward implements NbtSaveable, WithDisplayData<RewardDispl
     }
 
     public void applyReward(ServerPlayer player) {
+        if (this.getParent() != null && !this.getParent().isActive()) return;
         this.rewarded = true;
         if (this.getParent() != null) {
             this.getParent().markForUpdate();

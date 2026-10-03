@@ -1,0 +1,22 @@
+{
+  "title": "Suspension avec progression",
+  "description": "Quête de test isolée. Suivez-la avant de réaliser son objectif.",
+  "chapter": "tracking_validation",
+  "sort_order": 3,
+  "icon": {
+    "item": "minecraft:compass"
+  },
+  "objectives": [
+    {
+      "type": "questlog:block_place",
+      "block": "minecraft:cobblestone",
+      "required_amount": 8
+    }
+  ],
+  "rewards": [
+    {
+      "type": "questlog:experience",
+      "experience": 5
+    }
+  ]
+}

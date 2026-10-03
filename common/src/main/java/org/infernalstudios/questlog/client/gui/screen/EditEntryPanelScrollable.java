@@ -43,23 +43,23 @@ public class EditEntryPanelScrollable implements Scrollable, GuiEventListener, N
     private List<EntryRow> getRows() {
         List<EntryRow> rows = new ArrayList<>();
         if (screen.entryNameBox != null) {
-            rows.add(new EntryRow(Component.literal("Name (Optional):"), screen.entryNameBox));
+            rows.add(new EntryRow(Component.literal("Name:"), screen.entryNameBox));
         }
         if (screen.entryTargetBox != null) {
             rows.add(new EntryRow(Component.literal(screen.getTargetFieldLabel()), screen.entryTargetBox));
         }
         if (screen.entrySlotBox != null) {
-            rows.add(new EntryRow(Component.literal("Slot (Optional):"), screen.entrySlotBox));
+            rows.add(new EntryRow(Component.literal("Slot:"), screen.entrySlotBox));
         }
         if (screen.entryComponentsBox != null) {
-            String labelStr = screen.isEntityObjective(screen.editingType) ? "Predicate (Optional):" : "Components (Optional):";
+            String labelStr = screen.isEntityObjective(screen.editingType) ? "Predicate:" : "Components:";
             rows.add(new EntryRow(Component.literal(labelStr), screen.entryComponentsBox));
         }
         if (screen.entryAmountBox != null) {
             rows.add(new EntryRow(Component.literal(screen.getAmountFieldLabel()), screen.entryAmountBox));
         }
         if (screen.entryIconBox != null) {
-            rows.add(new EntryRow(Component.literal("Icon (Optional):"), screen.entryIconBox));
+            rows.add(new EntryRow(Component.literal("Icon:"), screen.entryIconBox));
         }
         return rows;
     }
@@ -94,7 +94,13 @@ public class EditEntryPanelScrollable implements Scrollable, GuiEventListener, N
         int currentY = 0;
         for (EntryRow row : rows) {
             int y = startY + currentY - scroll;
-            ps.drawString(screen.getFont(), row.label, startX, y, color, false);
+            boolean required = screen.entryFieldRequired(row.widget);
+            boolean missing = required && row.widget instanceof net.minecraft.client.gui.components.EditBox box && box.getValue().isBlank();
+            Component label = row.label.copy();
+            if (required) label = label.copy().append(Component.translatable("questlog.validation.required_marker"));
+            ps.drawString(screen.getFont(), label, startX, y, missing ? 0xFFAA0000 : color, false);
+            if (hovered && absMouseX >= startX && absMouseX < startX + 125 && absMouseY >= y && absMouseY < y + 10)
+                screen.pendingTooltip = Component.translatable(missing ? "questlog.validation.required" : required ? "questlog.validation.required_field" : "questlog.validation.optional_field");
             row.widget.setX(startX);
             row.widget.setY(y + 10);
             row.widget.render(ps, renderMouseX, renderMouseY, partialTicks);

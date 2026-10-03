@@ -1,0 +1,7 @@
+{
+  "name-fr_fr": "Traductions intégrées",
+  "name-en_us": "Inline translations",
+  "icon": { "item": "minecraft:book" },
+  "order": 88,
+  "hidden": false
+}

@@ -1,6 +1,7 @@
 package org.infernalstudios.questlog.core.quests.display;
 
 import com.google.gson.JsonObject;
+import org.infernalstudios.questlog.core.QuestText;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -14,7 +15,9 @@ public class ObjectiveDisplayData {
 
     @Nullable
     private final Blittable icon;
-    private final Component name;
+    private Component name;
+    private final JsonObject textSource;
+    private String textLanguage;
     @Nullable
     private final ResourceLocation itemId;
     @Nullable
@@ -22,12 +25,14 @@ public class ObjectiveDisplayData {
     private int indentLevel = 0;
 
     public ObjectiveDisplayData(JsonObject data) {
+        this.textSource = data.deepCopy(); this.textLanguage = QuestText.language();
+        data = QuestText.project(data);
         String name = JsonUtils.getOrDefault(data, "name", (String) null);
 
         if (name == null) {
             this.name = this.generateSmartName(data);
         } else {
-            this.name = JsonUtils.getOrDefault(data, "translatable", false) ? Component.translatable(name) : Component.literal(name);
+            this.name = QuestText.translatable(data,"name",JsonUtils.getOrDefault(data, "translatable", false)) ? Component.translatable(name) : Component.literal(name);
         }
 
         this.icon = JsonUtils.getIcon(data, "icon");
@@ -134,9 +139,9 @@ public class ObjectiveDisplayData {
                 Component questTitle = null;
                 if (questId != null && DefinitionUtil.getCachedQuestKeys().contains(questId)) {
                     JsonObject qJson = DefinitionUtil.getCachedQuest(questId);
-                    String title = JsonUtils.getOrDefault(qJson, "title", questStr);
+                    String title = QuestText.text(qJson, "title", questStr);
                     boolean translatable = JsonUtils.getOrDefault(qJson, "translatable", false);
-                    questTitle = translatable ? Component.translatable(title) : Component.literal(title);
+                    questTitle = QuestText.name(qJson,"title",Component.literal(questStr));
                 } else if (!questStr.isEmpty()) {
                     questTitle = Component.literal(questStr);
                 }
@@ -160,6 +165,11 @@ public class ObjectiveDisplayData {
     }
 
     public Component getName() {
+        if (!textLanguage.equals(QuestText.language())) {
+            JsonObject view = QuestText.project(textSource);
+            this.name = view.has("name") ? QuestText.name(textSource,"name",Component.empty()) : generateSmartName(view);
+            this.textLanguage = QuestText.language();
+        }
         return this.name;
     }
 

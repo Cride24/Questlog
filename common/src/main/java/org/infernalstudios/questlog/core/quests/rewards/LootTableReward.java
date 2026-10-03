@@ -28,6 +28,7 @@ public class LootTableReward extends Reward {
 
     @Override
     public void applyReward(ServerPlayer player) {
+        if (this.getParent() != null && !this.getParent().isActive()) return;
         LootTable table = Objects.requireNonNull(player.getServer()).reloadableRegistries()
                 .getLootTable(ResourceKey.create(Registries.LOOT_TABLE, this.lootTable));
 

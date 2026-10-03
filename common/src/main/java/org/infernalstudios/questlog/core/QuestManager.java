@@ -21,6 +21,7 @@ import java.util.Map;
 public class QuestManager {
     private final Map<ResourceLocation, Quest> quests = new LinkedHashMap<>();
     public Player player;
+    public final QuestTracking tracking = new QuestTracking();
     private boolean editMode = false;
     private boolean loaded = false;
 
@@ -49,6 +50,7 @@ public class QuestManager {
     }
 
     public void clearQuests() {
+        this.quests.values().forEach(quest -> quest.setActive(false));
         this.quests.clear();
     }
 
@@ -58,7 +60,7 @@ public class QuestManager {
             savedData.put(quest.getId().toString(), quest.serialize());
         }
 
-        this.quests.clear();
+        this.clearQuests();
         this.createAllQuests();
 
         for (Quest quest : this.quests.values()) {
@@ -72,7 +74,8 @@ public class QuestManager {
      * Removes a quest from the player's tracked quest list.
      */
     public void removeQuest(ResourceLocation id) {
-        this.quests.remove(id);
+        Quest removed = this.quests.remove(id);
+        if (removed != null) removed.setActive(false);
     }
 
     public Quest getQuest(ResourceLocation id) {
@@ -97,6 +100,9 @@ public class QuestManager {
      */
     public void createAllQuests() {
         List<ResourceLocation> ids = DefinitionUtil.getCachedQuestKeys();
+        var references = this.player instanceof ServerPlayer serverPlayer
+                ? org.infernalstudios.questlog.core.validation.QuestReferences.forServer(serverPlayer)
+                : new org.infernalstudios.questlog.core.validation.QuestReferences(this.player.level().registryAccess(), null);
 
         for (ResourceLocation id : ids) {
             if (!this.quests.containsKey(id)) {
@@ -104,6 +110,13 @@ public class QuestManager {
                 Quest quest;
                 try {
                     quest = Quest.create(definition, id, this);
+                    boolean functional = org.infernalstudios.questlog.core.validation.QuestValidation.inspect(definition, references).functional();
+                    quest.setFunctional(functional);
+                    definition.addProperty("_functional", functional);
+                    if (!functional) {
+                        quest.setActive(false);
+                        definition.addProperty("active", false);
+                    }
                     CompoundTag data = new CompoundTag();
                     quest.writeInitialData(data);
                     quest.deserialize(data);
@@ -114,15 +127,22 @@ public class QuestManager {
                     Questlog.LOGGER.error(" The JSON file has a syntax error, typo, or missing field.");
                     Questlog.LOGGER.error(" Exception Details: ", e);
                     Questlog.LOGGER.error("=====================================================");
+                    if (definition != null) {
+                        definition.addProperty("active", false);
+                        definition.addProperty("_functional", false);
+                        definition.addProperty("_validation_error", e.getMessage() == null ? e.toString() : e.getMessage());
+                    }
                     try {
                         JsonObject fallbackDef = new JsonObject();
                         fallbackDef.addProperty("title", "Broken Quest (" + id.getPath() + ")");
+                        fallbackDef.addProperty("active", false);
+                        fallbackDef.addProperty("_functional", false);
                         String errorMsg = e.getMessage() != null ? e.getMessage() : e.toString();
                         if (e.getCause() != null) {
                             errorMsg += "\nCaused by: " + e.getCause().getMessage();
                         }
                         fallbackDef.addProperty("description", "This quest failed to load properly. Edit it to fix errors.\n\nError details:\n" + errorMsg);
-                        fallbackDef.addProperty("chapter", definition != null && definition.has("chapter") ? definition.get("chapter").getAsString() : "main");
+                        fallbackDef.addProperty("chapter", definition != null && definition.has("chapter") && definition.get("chapter").isJsonPrimitive() && definition.get("chapter").getAsJsonPrimitive().isString() ? definition.get("chapter").getAsString() : "main");
                         quest = Quest.create(fallbackDef, id, this);
                         CompoundTag data = new CompoundTag();
                         quest.writeInitialData(data);
@@ -157,6 +177,11 @@ public class QuestManager {
     public void sync(ResourceLocation id) {
         if (!this.isClient() && this.player instanceof ServerPlayer) {
             Questlog.LOGGER.trace("Syncing quest data for {} to client", id);
+            if (this.tracking.prune(this)) {
+                Services.PLATFORM.sendPacketToClient((ServerPlayer) this.player,
+                        new org.infernalstudios.questlog.network.packet.QuestTrackingPacket(this.tracking.ids()));
+                ServerPlayerManager.INSTANCE.save(this);
+            }
             Quest quest = this.quests.get(id);
             if (quest == null) {
                 // This will only be called if a definition has been deleted while reloading the server
@@ -165,6 +190,7 @@ public class QuestManager {
             } else {
                 CompoundTag data = this.getQuest(id).serialize();
                 Services.PLATFORM.sendPacketToClient((ServerPlayer) this.player, new QuestDataPacket(id, data));
+                if (!quest.isActive()) return;
                 Questlog.LOGGER.trace("Sent quest data for {} to client", id);
                 if (!quest.hasSentTrigger && quest.isTriggered()) {
                     quest.hasSentTrigger = true;

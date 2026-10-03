@@ -80,7 +80,7 @@ public class QuestObjectiveRegistry {
         register(ResourceLocation.fromNamespaceAndPath("questlog", "visit_dimension"), VisitDimensionObjective::new,
                 new EditorMetadata("dimension", "Dimension:", "required_amount", EditorMetadata.SuggestionType.DIMENSION));
         register(ResourceLocation.fromNamespaceAndPath("questlog", "visit_position"), VisitPositionObjective::new,
-                new EditorMetadata(null, null, "required_amount"));
+                new EditorMetadata("bounds", "Area:", "required_amount"));
         register(ResourceLocation.fromNamespaceAndPath("questlog", "visit_structure"), VisitStructureObjective::new,
                 new EditorMetadata("structure", "Structure ID:", "required_amount", EditorMetadata.SuggestionType.STRUCTURE));
         register(ResourceLocation.fromNamespaceAndPath("questlog", "quest_complete"), QuestCompleteObjective::new,

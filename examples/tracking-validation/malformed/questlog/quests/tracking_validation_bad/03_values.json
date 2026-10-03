@@ -1,0 +1,16 @@
+{
+  "title": "Types et valeurs invalides",
+  "chapter": "tracking_validation_bad",
+  "active": false,
+  "sort_order": {},
+  "objectives": [
+    {
+      "type": "questlog:read",
+      "required_amount": 0
+    },
+    {
+      "type": "questlog:not_a_real_type"
+    }
+  ],
+  "description": "Définition volontairement incorrecte pour tester le validateur."
+}

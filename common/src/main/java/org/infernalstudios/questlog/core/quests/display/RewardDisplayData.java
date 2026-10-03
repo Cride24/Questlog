@@ -1,6 +1,7 @@
 package org.infernalstudios.questlog.core.quests.display;
 
 import com.google.gson.JsonObject;
+import org.infernalstudios.questlog.core.QuestText;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -13,7 +14,9 @@ import org.jetbrains.annotations.Nullable;
 
 public class RewardDisplayData {
 
-    private final Component name;
+    private Component name;
+    private final JsonObject textSource;
+    private String textLanguage;
     private final boolean hasCustomName;
     @Nullable
     private final Blittable icon;
@@ -25,13 +28,15 @@ public class RewardDisplayData {
     private Component lazyName;
 
     public RewardDisplayData(JsonObject data) {
+        this.textSource = data.deepCopy(); this.textLanguage = QuestText.language();
+        data = QuestText.project(data);
         this.hasCustomName = data.has("name");
         String name = JsonUtils.getOrDefault(data, "name", (String) null);
 
         if (name == null) {
             this.name = this.generateSmartName(data);
         } else {
-            this.name = JsonUtils.getOrDefault(data, "translatable", false) ? Component.translatable(name) : Component.literal(name);
+            this.name = QuestText.translatable(data,"name",JsonUtils.getOrDefault(data, "translatable", false)) ? Component.translatable(name) : Component.literal(name);
         }
         this.icon = JsonUtils.getIcon(data, "icon");
 
@@ -103,6 +108,12 @@ public class RewardDisplayData {
     }
 
     public Component getName() {
+        if (!textLanguage.equals(QuestText.language())) {
+            JsonObject view = QuestText.project(textSource);
+            this.name = view.has("name") ? QuestText.name(textSource,"name",Component.empty()) : generateSmartName(view);
+            this.textLanguage = QuestText.language();
+            this.lazyName = null;
+        }
         if (this.lazyName == null) {
             if (!this.hasCustomName && this.reward instanceof ItemReward itemReward) {
                 net.minecraft.world.item.ItemStack stack = itemReward.getStack();

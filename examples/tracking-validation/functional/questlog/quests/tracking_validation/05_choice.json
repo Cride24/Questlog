@@ -1,0 +1,31 @@
+{
+  "title": "Récompense au choix",
+  "description": "Quête de test isolée. Suivez-la avant de réaliser son objectif.",
+  "chapter": "tracking_validation",
+  "sort_order": 4,
+  "icon": {
+    "item": "minecraft:compass"
+  },
+  "objectives": [
+    {
+      "type": "questlog:read"
+    }
+  ],
+  "rewards": [
+    {
+      "type": "questlog:choice",
+      "pick_count": 1,
+      "choices": [
+        {
+          "type": "questlog:experience",
+          "experience": 5
+        },
+        {
+          "type": "questlog:item",
+          "item": "minecraft:bread",
+          "count": 2
+        }
+      ]
+    }
+  ]
+}

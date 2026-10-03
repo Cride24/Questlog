@@ -3,6 +3,25 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
+tasks.register('verifyTrackingValidation', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'org.infernalstudios.questlog.TrackingValidationVerification'
+    systemProperty 'questlog.examples', rootProject.file('examples/tracking-validation').absolutePath
+    workingDir = layout.buildDirectory.dir('verification').get().asFile
+    doFirst { workingDir.mkdirs() }
+}
+tasks.named('check') { dependsOn 'verifyTrackingValidation' }
+
+tasks.register('verifyInlineLanguages', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'org.infernalstudios.questlog.InlineLanguagesVerification'
+    workingDir = layout.buildDirectory.dir('verification').get().asFile
+    doFirst { workingDir.mkdirs() }
+}
+tasks.named('check') { dependsOn 'verifyInlineLanguages' }
+
 repositories {
     maven {
         name = "Modrinth"

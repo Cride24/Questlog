@@ -10,6 +10,11 @@ import org.infernalstudios.questlog.network.packet.*;
 
 public class QuestlogPacketsFabric {
     public static void registerCommon() {
+        PayloadTypeRegistry.playS2C().register(QuestAuthorResultPacket.TYPE, QuestAuthorResultPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(QuestAuthorPacket.TYPE, QuestAuthorPacket.STREAM_CODEC);
+
+        PayloadTypeRegistry.playS2C().register(QuestTrackingPacket.TYPE, QuestTrackingPacket.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(QuestTrackingUpdatePacket.TYPE, QuestTrackingUpdatePacket.STREAM_CODEC);
         // Register S2C Payloads
         PayloadTypeRegistry.playS2C().register(QuestSyncPacket.TYPE, QuestSyncPacket.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(QuestDataPacket.TYPE, QuestDataPacket.STREAM_CODEC);
@@ -34,6 +39,8 @@ public class QuestlogPacketsFabric {
     }
 
     public static void registerClient() {
+        ClientPlayNetworking.registerGlobalReceiver(QuestTrackingPacket.TYPE, (payload, context) -> context.client().execute(() -> ClientPacketHandler.handle(payload, createClientContext())));
+        ClientPlayNetworking.registerGlobalReceiver(QuestAuthorResultPacket.TYPE, (payload, context) -> context.client().execute(() -> ClientPacketHandler.handle(payload, createClientContext())));
         ClientPlayNetworking.registerGlobalReceiver(QuestSyncPacket.TYPE, (payload, context) -> context.client().execute(() -> ClientPacketHandler.handle(payload, createClientContext())));
         ClientPlayNetworking.registerGlobalReceiver(QuestDataPacket.TYPE, (payload, context) -> context.client().execute(() -> ClientPacketHandler.handle(payload, createClientContext())));
         ClientPlayNetworking.registerGlobalReceiver(QuestDefinitionPacket.TYPE, (payload, context) -> context.client().execute(() -> ClientPacketHandler.handle(payload, createClientContext())));
@@ -45,6 +52,8 @@ public class QuestlogPacketsFabric {
     }
 
     private static void registerServerReceivers() {
+        ServerPlayNetworking.registerGlobalReceiver(QuestTrackingUpdatePacket.TYPE, (payload, context) -> context.server().execute(() -> QuestTrackingUpdatePacket.handle(payload, createServerContext(context.player()))));
+        ServerPlayNetworking.registerGlobalReceiver(QuestAuthorPacket.TYPE, (payload, context) -> context.server().execute(() -> QuestAuthorPacket.handle(payload, createServerContext(context.player()))));
         ServerPlayNetworking.registerGlobalReceiver(QuestRewardCollectPacket.TYPE, (payload, context) -> context.server().execute(() -> QuestRewardCollectPacket.handle(payload, createServerContext(context.player()))));
         ServerPlayNetworking.registerGlobalReceiver(QuestReadPacket.TYPE, (payload, context) -> context.server().execute(() -> QuestReadPacket.handle(payload, createServerContext(context.player()))));
         ServerPlayNetworking.registerGlobalReceiver(QuestEditSavePacket.TYPE, (payload, context) -> context.server().execute(() -> QuestEditSavePacket.handle(payload, createServerContext(context.player()))));

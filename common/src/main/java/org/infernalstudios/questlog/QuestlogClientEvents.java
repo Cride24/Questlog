@@ -23,6 +23,8 @@ public class QuestlogClientEvents {
     public static Quest mostRecentNotificationQuest = null;
 
     public static void onClientTick() {
+        org.infernalstudios.questlog.core.QuestText.setLanguage(Minecraft.getInstance().getLanguageManager().getSelected());
+        org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.tick();
         if (QuestToastState.tickDelayForCheck >= 0) {
             QuestToastState.tickDelayForCheck--;
         }
@@ -45,12 +47,15 @@ public class QuestlogClientEvents {
     }
 
     public static void onClientPlayerLogin() {
+        org.infernalstudios.questlog.core.QuestText.setLanguage(Minecraft.getInstance().getLanguageManager().getSelected());
         QuestlogClient.getLocal();
         ClientPacketHandler.handleDeferredDefinitions();
         ClientPacketHandler.handleDeferredSync();
     }
 
     public static void onClientPlayerLogout() {
+        org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.clear();
+        org.infernalstudios.questlog.network.ClientPacketHandler.clearSession();
         QuestlogClient.isEditModeActive = false;
         QuestlogClient.destroyLocal();
         Questlog.EVENTS.removeAllListeners();

@@ -62,10 +62,13 @@ public class EditorUtils {
             
             ResourceLocation newId = getUniqueQuestId(questId);
             
-            String currentTitle = clonedJson.has("title") ? clonedJson.get("title").getAsString() : "New Quest";
-            clonedJson.addProperty("title", currentTitle + " (Copy)");
+            String currentTitle = org.infernalstudios.questlog.core.QuestText.text(clonedJson,"title","New Quest");
+            clonedJson.addProperty(org.infernalstudios.questlog.core.QuestText.selectKey(clonedJson,"title",org.infernalstudios.questlog.core.QuestText.language()), currentTitle + " (Copy)");
+            clonedJson.addProperty("sort_order", DefinitionUtil.nextQuestOrder(
+                    org.infernalstudios.questlog.core.validation.QuestDraftFields.text(clonedJson,"chapter","main")));
             
-            Services.PLATFORM.sendPacketToServer(new QuestEditSavePacket(newId, clonedJson.toString()));
+            clonedJson.addProperty("active",false);
+            Services.PLATFORM.sendPacketToServer(new QuestEditSavePacket(newId, clonedJson.toString(), true));
         } catch (Exception e) {
             Questlog.LOGGER.error("Failed to duplicate quest", e);
         }
@@ -97,11 +100,13 @@ public class EditorUtils {
             ResourceLocation newId = getUniqueQuestId(baseId);
             
             clonedJson.addProperty("chapter", chapterId.toString());
+            clonedJson.addProperty("sort_order", DefinitionUtil.nextQuestOrder(chapterId.toString()));
             
-            String currentTitle = clonedJson.has("title") ? clonedJson.get("title").getAsString() : "New Quest";
-            clonedJson.addProperty("title", currentTitle + " (Copy)");
+            String currentTitle = org.infernalstudios.questlog.core.QuestText.text(clonedJson,"title","New Quest");
+            clonedJson.addProperty(org.infernalstudios.questlog.core.QuestText.selectKey(clonedJson,"title",org.infernalstudios.questlog.core.QuestText.language()), currentTitle + " (Copy)");
             
-            Services.PLATFORM.sendPacketToServer(new QuestEditSavePacket(newId, clonedJson.toString()));
+            clonedJson.addProperty("active",false);
+            Services.PLATFORM.sendPacketToServer(new QuestEditSavePacket(newId, clonedJson.toString(), true));
         } catch (Exception e) {
             Questlog.LOGGER.error("Failed to paste quest", e);
         }
@@ -194,7 +199,7 @@ public class EditorUtils {
                         if (filename.endsWith(".json")) {
                             filename = filename.substring(0, filename.length() - 5);
                         }
-                        String title = json.has("title") ? json.get("title").getAsString() : filename;
+                        String title = org.infernalstudios.questlog.core.QuestText.text(json,"title",filename);
                         String description = json.has("description") ? json.get("description").getAsString() : "";
                         presets.add(new EditorPreset(filename, title, description, json));
                     } catch (Exception e) {

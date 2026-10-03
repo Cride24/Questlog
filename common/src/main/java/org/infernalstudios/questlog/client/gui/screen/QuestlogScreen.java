@@ -1,4 +1,5 @@
 package org.infernalstudios.questlog.client.gui.screen;
+import org.infernalstudios.questlog.platform.Services;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -89,11 +90,11 @@ public class QuestlogScreen extends Screen {
             boolean isPrimary = JsonUtils.getOrDefault(chapterDef, "default_chapter", false);
             boolean hidden = JsonUtils.getOrDefault(chapterDef, "hidden", false);
 
-            String nameStr = JsonUtils.getOrDefault(chapterDef, "name", (String) null);
+            String nameStr = org.infernalstudios.questlog.core.QuestText.text(chapterDef, "name", null);
             boolean translatable = JsonUtils.getOrDefault(chapterDef, "translatable", false);
             Component name;
             if (nameStr != null) {
-                name = translatable ? Component.translatable(nameStr) : Component.literal(nameStr);
+                name = org.infernalstudios.questlog.core.QuestText.name(chapterDef,"name",Component.literal(nameStr));
             } else {
                 name = Component.translatable("questlog.chapter." + chapterId.getNamespace() + "." + chapterId.getPath());
             }
@@ -429,7 +430,7 @@ public class QuestlogScreen extends Screen {
         int y = (this.height - height) / 2 + 1 + Questlog.getConfig().gui.mainPanelY;
 
         List<Quest> quests = this.manager.getAllQuests().stream()
-                .filter(quest -> QuestlogClient.isEditModeActive || (quest.isTriggered() && !quest.getDisplay().isHidden()))
+                .filter(quest -> QuestlogClient.isEditModeActive || (quest.isActive() && quest.isTriggered() && !quest.getDisplay().isHidden()))
                 .filter(quest -> !this.hideCompleted || !quest.isCompleted())
                 .filter(quest -> QuestlogClient.isEditModeActive
                         || !quest.getDisplay().shouldHideWhenCompleted()
@@ -620,7 +621,7 @@ public class QuestlogScreen extends Screen {
                     Quest finalHovered = hoveredQuest;
                     items.add(new ContextMenuItem(Component.translatable("questlog.menu.edit"), () -> {
                         if (this.minecraft != null) {
-                            this.minecraft.setScreen(new QuestEditorScreen(this, finalHovered));
+                            QuestEditorScreen.requestEdit(this, finalHovered);
                         }
                     }));
                     items.add(new ContextMenuItem(Component.translatable("questlog.menu.duplicate"), () -> {
@@ -765,6 +766,11 @@ public class QuestlogScreen extends Screen {
     public void removed() {
         this.saveCurrentScrollPosition();
         super.removed();
+    }
+
+    @Nullable
+    ResourceLocation getCurrentChapter() {
+        return this.currentChapter;
     }
 
     private void setCurrentChapter(ResourceLocation chapter) {

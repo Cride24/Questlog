@@ -30,13 +30,13 @@ public class DefinitionUtil {
         keys.sort((a, b) -> {
             JsonObject jsonA = QUEST_DEFINITION_CACHE.get(a);
             JsonObject jsonB = QUEST_DEFINITION_CACHE.get(b);
-            int orderA = JsonUtils.getOrDefault(jsonA, "sort_order", JsonUtils.getOrDefault(jsonA, "order", 0));
-            int orderB = JsonUtils.getOrDefault(jsonB, "sort_order", JsonUtils.getOrDefault(jsonB, "order", 0));
+            int orderA = definitionOrder(jsonA);
+            int orderB = definitionOrder(jsonB);
             if (orderA != orderB) {
                 return Integer.compare(orderA, orderB);
             }
-            String titleA = JsonUtils.getOrDefault(jsonA, "title", "");
-            String titleB = JsonUtils.getOrDefault(jsonB, "title", "");
+            String titleA = definitionTitle(jsonA);
+            String titleB = definitionTitle(jsonB);
             int titleCompare = titleA.compareToIgnoreCase(titleB);
             if (titleCompare != 0) {
                 return titleCompare;
@@ -44,6 +44,48 @@ public class DefinitionUtil {
             return a.compareTo(b);
         });
         return keys;
+    }
+
+    private static int definitionOrder(JsonObject definition) {
+        try {
+            return definition.has("sort_order") ? definition.get("sort_order").getAsInt()
+                    : JsonUtils.getOrDefault(definition, "order", 0);
+        } catch (RuntimeException malformed) {
+            return 0; // Keep malformed definitions accessible to the author and validator.
+        }
+    }
+
+    /** Append to this chapter's definitions, including inactive drafts, rather than the main-page aggregate. */
+    public static int nextQuestOrder(String chapter) {
+        ResourceLocation chapterId = chapterId(chapter);
+        if (chapterId == null) return 0;
+        Integer maximum = null;
+        for (JsonObject definition : QUEST_DEFINITION_CACHE.values()) {
+            try {
+                if (!chapterId.equals(chapterId(JsonUtils.getOrDefault(definition, "chapter", "questlog:main")))) continue;
+                int order = definitionOrder(definition);
+                maximum = maximum == null ? order : Math.max(maximum, order);
+            } catch (RuntimeException malformed) {
+                // An unreadable chapter cannot influence another chapter's proposed order.
+            }
+        }
+        return maximum == null ? 0 : maximum == Integer.MAX_VALUE ? maximum : maximum + 1;
+    }
+
+    private static ResourceLocation chapterId(String chapter) {
+        return chapter == null ? null : ResourceLocation.tryParse(chapter.contains(":") ? chapter : Questlog.MODID + ":" + chapter);
+    }
+
+    private static String definitionTitle(JsonObject definition) {
+        try {
+            return QuestText.text(definition, "title", "");
+        } catch (RuntimeException malformed) {
+            return "";
+        }
+    }
+
+    public static boolean hasCachedQuest(ResourceLocation path) {
+        return QUEST_DEFINITION_CACHE.containsKey(path);
     }
 
     public static JsonObject getCachedQuest(ResourceLocation path) {
@@ -72,8 +114,8 @@ public class DefinitionUtil {
 
             JsonObject jsonA = CHAPTER_DEFINITION_CACHE.get(a);
             JsonObject jsonB = CHAPTER_DEFINITION_CACHE.get(b);
-            int orderA = JsonUtils.getOrDefault(jsonA, "sort_order", JsonUtils.getOrDefault(jsonA, "order", 0));
-            int orderB = JsonUtils.getOrDefault(jsonB, "sort_order", JsonUtils.getOrDefault(jsonB, "order", 0));
+            int orderA = definitionOrder(jsonA);
+            int orderB = definitionOrder(jsonB);
 
             if (orderA != orderB) {
                 return Integer.compare(orderA, orderB);
@@ -144,6 +186,7 @@ public class DefinitionUtil {
                         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(Questlog.MODID, resourcePath);
                         try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
                             JsonObject json = GSON.fromJson(reader, JsonObject.class);
+                            if (json == null) throw new IOException("Expected a JSON object");
                             cache.put(id, json);
                         } catch (Exception e) {
                             Questlog.LOGGER.error("Failed to parse file: {}", path, e);
@@ -162,6 +205,8 @@ public class DefinitionUtil {
                                     errorMsg += "\nCaused by: " + e.getCause().getMessage();
                                 }
                                 JsonObject fallback = new JsonObject();
+                                fallback.addProperty("active", false);
+                                fallback.addProperty("_validation_error", errorMsg);
                                 fallback.addProperty("title", "Broken Quest (" + id.getPath() + ")");
                                 fallback.addProperty("description", "This quest failed to load properly. Edit it to fix errors.\n\nError details:\n" + errorMsg);
                                 fallback.addProperty("chapter", chapterVal);

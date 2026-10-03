@@ -74,8 +74,8 @@ class RightPanelScrollable implements Scrollable, GuiEventListener, NarratableEn
                 type = "unknown";
             }
             String text = type;
-            if (entry.has("name")) {
-                text = entry.get("name").getAsString();
+            if (org.infernalstudios.questlog.core.QuestText.filled(entry.get(org.infernalstudios.questlog.core.QuestText.selectKey(entry,"name",screen.editingLanguage())))) {
+                text = org.infernalstudios.questlog.core.QuestText.text(entry,"name",screen.editingLanguage(),"");
             } else {
                 String target = "";
                 if (!fullType.isEmpty()) {

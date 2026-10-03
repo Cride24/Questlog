@@ -1,0 +1,16 @@
+{
+  "title": "Champs obligatoires absents",
+  "chapter": "tracking_validation_bad",
+  "active": false,
+  "objectives": [
+    {
+      "type": "questlog:block_place"
+    }
+  ],
+  "rewards": [
+    {
+      "type": "questlog:experience"
+    }
+  ],
+  "description": "Définition volontairement incorrecte pour tester le validateur."
+}

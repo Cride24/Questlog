@@ -19,7 +19,11 @@ public record EditorMetadata(
         this(targetFieldKey, targetFieldLabel, amountFieldKey, null, SuggestionType.NONE);
     }
 
+    public boolean targetRequired(boolean reward) {
+        return targetFieldKey != null && (reward || !java.util.Set.of("item", "entity", "enchantment").contains(targetFieldKey));
+    }
+
     public enum SuggestionType {
-        NONE, BLOCK, ITEM, ENTITY_TYPE, BIOME, DIMENSION, MOB_EFFECT, ENCHANTMENT, QUEST, STRUCTURE, LOOT_TABLE, CUSTOM_STAT, ADVANCEMENT, ORIGIN
+        NONE, BLOCK, ITEM, ENTITY_TYPE, BIOME, DIMENSION, MOB_EFFECT, ENCHANTMENT, QUEST, STRUCTURE, LOOT_TABLE, CUSTOM_STAT, ADVANCEMENT, ORIGIN, CHAPTER
     }
 }

@@ -16,6 +16,21 @@ public class QuestlogFabricEventForwarder {
     }
 
     public static void initClient() {
+        net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback.EVENT.register((graphics, delta) -> {
+            if (net.minecraft.client.Minecraft.getInstance().screen == null)
+                org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.render(graphics, -1, -1);
+        });
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
+            if (!(screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+            net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterRender(screen).register((current, graphics, x, y, delta) ->
+                    org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.render(graphics,x,y));
+            net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen).register((current,x,y,button) ->
+                    !org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.click(x,y,button));
+            net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseRelease(screen).register((current,x,y,button) ->
+                    !org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.release(x,y,button));
+            net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseScroll(screen).register((current,x,y,horizontal,vertical) ->
+                    !org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.scroll(x,y,vertical));
+        });
         ClientTickEvents.START_CLIENT_TICK.register(minecraft -> QuestlogClientEvents.onClientTick());
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> QuestlogClientEvents.onClientPlayerLogin());
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> QuestlogClientEvents.onClientPlayerLogout());

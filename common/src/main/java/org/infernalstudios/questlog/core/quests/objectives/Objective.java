@@ -46,6 +46,7 @@ public abstract class Objective implements NbtSaveable, WithDisplayData<Objectiv
     }
 
     public void setUnits(int units) {
+        if (this.getParent() != null && !this.getParent().isActive()) return;
         if (this.getParent() != null && !this.getParent().isTriggered() && !this.isPartOfPrerequisites) {
             return;
         }

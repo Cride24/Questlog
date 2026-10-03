@@ -79,6 +79,8 @@ public class QuestDetails extends Screen implements NarrationSupplier {
         this(previousScreen, quest, quest.getDisplay().hasDetails() && quest.getDisplay().isDetailsOpenByDefault());
     }
 
+    public static QuestDetails overview(@Nullable Screen previousScreen, Quest quest) { return new QuestDetails(previousScreen, quest, false); }
+
     private QuestDetails(@Nullable Screen previousScreen, Quest quest, boolean detailsPage) {
         super(quest.getDisplay().getTitle());
         this.quest = quest;
@@ -156,9 +158,20 @@ public class QuestDetails extends Screen implements NarrationSupplier {
         this.setupContent();
     }
 
+    private QuestlogButton followButton;
+
     private void setupButtons() {
         int height = this.getDisplay().getPanelHeight();
 
+        if (!this.detailsPage) {
+            this.followButton = new QuestlogButton(this.panel1X, Math.max(0,this.panel1Y-22),
+                    this.getPalette().textColor(), this.getPalette().hoveredTextColor(),
+                    Component.translatable(org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.follows(this.quest.getId()) ? "questlog.tracking.unfollow" : "questlog.tracking.follow"),
+                    () -> org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.toggle(this.quest.getId()),this.getGuiSet());
+            this.followButton.active = org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.follows(this.quest.getId())
+                    || this.quest.isActive() && this.quest.isTriggered() && (!this.quest.isCompleted() || !this.quest.isRewarded());
+            this.addRenderableWidget(this.followButton);
+        }
         int buttonY = this.panel1Y + height + 2;
 
         this.backButton = new QuestlogButton(
@@ -224,9 +237,9 @@ public class QuestDetails extends Screen implements NarrationSupplier {
             return;
         }
 
-        if (this.quest.isCompleted() && this.quest.isRewarded() && this.quest.isRepeatable()) {
+        if (this.quest.isActive() && this.quest.isCompleted() && this.quest.isRewarded() && this.quest.isRepeatable()) {
             backText = Component.translatable("questlog.reward.reset");
-        } else if (this.needsRead()) {
+        } else if (this.quest.isActive() && this.needsRead()) {
             backText = Component.translatable("questlog.button.read");
         }
 
@@ -242,7 +255,7 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     }
 
     private boolean shouldShowRewardButton() {
-        return !this.detailsPage && this.showInfo && !this.quest.rewards.isEmpty()
+        return this.quest.isActive() && !this.detailsPage && this.showInfo && !this.quest.rewards.isEmpty()
                 && this.quest.isCompleted() && !this.quest.isRewarded();
     }
 
@@ -266,9 +279,9 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     private void handlePrimaryAction() {
         if (this.detailsPage) {
             if (this.minecraft != null) this.minecraft.setScreen(this.previousScreen);
-        } else if (this.quest.isCompleted() && this.quest.isRewarded() && this.quest.isRepeatable()) {
+        } else if (this.quest.isActive() && this.quest.isCompleted() && this.quest.isRewarded() && this.quest.isRepeatable()) {
             Services.PLATFORM.sendPacketToServer(new org.infernalstudios.questlog.network.packet.QuestResetPacket(this.quest.getId()));
-        } else if (this.needsRead()) {
+        } else if (this.quest.isActive() && this.needsRead()) {
             Services.PLATFORM.sendPacketToServer(new QuestReadPacket(this.quest.getId()));
         } else if (this.minecraft != null) {
             this.minecraft.setScreen(this.previousScreen);
@@ -332,6 +345,11 @@ public class QuestDetails extends Screen implements NarrationSupplier {
     public void render(@NotNull GuiGraphics ps, int mouseX, int mouseY, float partialTicks) {
         this.pendingTooltip = null;
         this.pendingItemTooltip = null;
+        if (this.followButton != null) {
+            boolean followed = org.infernalstudios.questlog.client.gui.TrackedQuestsOverlay.follows(this.quest.getId());
+            this.followButton.setMessage(Component.translatable(followed ? "questlog.tracking.unfollow" : "questlog.tracking.follow"));
+            this.followButton.active = followed || this.quest.isActive() && this.quest.isTriggered() && !this.quest.getDisplay().isHidden() && (!this.quest.isCompleted() || !this.quest.isRewarded());
+        }
         super.render(ps, mouseX, mouseY, partialTicks);
         this.renderTitle(ps);
         if (this.description != null) this.description.render(ps, mouseX, mouseY, partialTicks);

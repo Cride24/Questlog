@@ -16,6 +16,7 @@ import org.infernalstudios.questlog.client.gui.EditorUtils;
 import org.infernalstudios.questlog.client.gui.QuestlogGuiSet;
 import org.infernalstudios.questlog.client.gui.components.NoShadowEditBox;
 import org.infernalstudios.questlog.core.DefinitionUtil;
+import org.infernalstudios.questlog.core.QuestText;
 import org.infernalstudios.questlog.network.packet.ChapterEditSavePacket;
 import org.infernalstudios.questlog.network.packet.QuestEditSavePacket;
 import org.infernalstudios.questlog.platform.Services;
@@ -42,6 +43,9 @@ public class ChapterEditorScreen extends Screen {
     private NineSliceTexture bgRight;
     private String tempId = "";
     private String tempTitle = "";
+    private JsonObject originalDefinition = new JsonObject();
+    private QuestText.Draft translatedTexts = new QuestText.Draft(new JsonObject(),java.util.Set.of("name"));
+    private String editingLanguage = LanguageSelectionScreen.playerLanguage();
     private String tempIconItem = "";
     private int tempSortOrder = 0;
     private boolean tempDefault = false;
@@ -64,7 +68,10 @@ public class ChapterEditorScreen extends Screen {
             this.tempId = this.chapterToEdit.toString();
             JsonObject definition = DefinitionUtil.getCachedChapter(this.chapterToEdit);
             if (definition != null) {
-                this.tempTitle = definition.has("name") ? definition.get("name").getAsString() : "";
+                this.originalDefinition = definition.deepCopy();
+                this.translatedTexts = new QuestText.Draft(definition,java.util.Set.of("name"));
+                this.editingLanguage = translatedTexts.initialLanguage(LanguageSelectionScreen.playerLanguage());
+                this.tempTitle = translatedTexts.read("name",editingLanguage);
                 if (definition.has("icon") && definition.get("icon").isJsonObject()) {
                     JsonObject iconObj = definition.getAsJsonObject("icon");
                     this.tempIconItem = iconObj.has("item") ? iconObj.get("item").getAsString() : "minecraft:knowledge_book";
@@ -77,7 +84,7 @@ public class ChapterEditorScreen extends Screen {
             }
         } else {
             this.tempId = "questlog:new_chapter";
-            this.tempTitle = "New Chapter";
+            this.tempTitle = "";
             this.tempIconItem = "minecraft:knowledge_book";
             this.tempSortOrder = 0;
             this.tempDefault = false;
@@ -88,6 +95,7 @@ public class ChapterEditorScreen extends Screen {
     public void saveTemporaryState() {
         if (this.idBox != null) this.tempId = this.idBox.getValue();
         if (this.titleBox != null) this.tempTitle = this.titleBox.getValue();
+        translatedTexts.put("name",editingLanguage,tempTitle);
         if (this.iconBox != null) this.tempIconItem = this.iconBox.getValue();
         if (this.orderBox != null) {
             try {
@@ -125,19 +133,24 @@ public class ChapterEditorScreen extends Screen {
         this.idBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.chapter_id")));
         this.addRenderableWidget(this.idBox);
 
-        this.titleBox = new NoShadowEditBox(this.font, panel1X + 15, panel1Y + 52, 210, 16, Component.empty());
+        this.addRenderableWidget(Button.builder(LanguageSelectionScreen.label(editingLanguage),button -> {
+            this.saveTemporaryState();
+            this.minecraft.setScreen(new LanguageSelectionScreen(this,editingLanguage,this::switchLanguage));
+        }).bounds(panel1X+15,panel1Y+52,210,16).build());
+
+        this.titleBox = new NoShadowEditBox(this.font, panel1X + 15, panel1Y + 84, 210, 16, Component.empty());
         this.titleBox.setMaxLength(64);
         this.titleBox.setValue(this.tempTitle);
         this.titleBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.chapter_title")));
         this.addRenderableWidget(this.titleBox);
 
-        this.iconBox = new NoShadowEditBox(this.font, panel1X + 15, panel1Y + 84, 210, 16, Component.empty());
+        this.iconBox = new NoShadowEditBox(this.font, panel1X + 15, panel1Y + 116, 210, 16, Component.empty());
         this.iconBox.setMaxLength(128);
         this.iconBox.setValue(this.tempIconItem);
         this.iconBox.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.chapter_icon")));
         this.addRenderableWidget(this.iconBox);
 
-        this.orderBox = new NoShadowEditBox(this.font, panel1X + 15, panel1Y + 116, 50, 16, Component.empty());
+        this.orderBox = new NoShadowEditBox(this.font, panel1X + 15, panel1Y + 148, 50, 16, Component.empty());
         this.orderBox.setMaxLength(8);
         this.orderBox.setValue(String.valueOf(this.tempSortOrder));
         this.orderBox.setFilter(s -> s.isEmpty() || s.matches("-?\\d*"));
@@ -147,14 +160,14 @@ public class ChapterEditorScreen extends Screen {
         Button btnDefault = Button.builder(Component.literal("Default: " + (this.tempDefault ? "True" : "False")), btn -> {
             this.tempDefault = !this.tempDefault;
             btn.setMessage(Component.literal("Default: " + (this.tempDefault ? "True" : "False")));
-        }).bounds(panel1X + 75, panel1Y + 116, 70, 16).build();
+        }).bounds(panel1X + 75, panel1Y + 148, 70, 16).build();
         btnDefault.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.chapter_default")));
         this.addRenderableWidget(btnDefault);
 
         Button btnHidden = Button.builder(Component.literal("Hidden: " + (this.tempHidden ? "True" : "False")), btn -> {
             this.tempHidden = !this.tempHidden;
             btn.setMessage(Component.literal("Hidden: " + (this.tempHidden ? "True" : "False")));
-        }).bounds(panel1X + 155, panel1Y + 116, 70, 16).build();
+        }).bounds(panel1X + 155, panel1Y + 148, 70, 16).build();
         btnHidden.setTooltip(Tooltip.create(Component.translatable("questlog.editor.tooltip.chapter_hidden")));
         this.addRenderableWidget(btnHidden);
 
@@ -307,16 +320,7 @@ public class ChapterEditorScreen extends Screen {
         }
         if (rl == null) return;
 
-        JsonObject json = new JsonObject();
-        json.addProperty("name", this.tempTitle);
-
-        JsonObject iconObj = new JsonObject();
-        iconObj.addProperty("item", this.tempIconItem);
-        json.add("icon", iconObj);
-
-        json.addProperty("order", this.tempSortOrder);
-        json.addProperty("default_chapter", this.tempDefault);
-        json.addProperty("hidden", this.tempHidden);
+        JsonObject json = this.buildDefinition();
 
         DefinitionUtil.putCachedChapter(rl, json);
         Services.PLATFORM.sendPacketToServer(new ChapterEditSavePacket(rl, json.toString()));
@@ -324,6 +328,26 @@ public class ChapterEditorScreen extends Screen {
         if (this.minecraft != null) {
             this.minecraft.setScreen(this.previousScreen);
         }
+    }
+
+    void switchLanguage(String language) { this.editingLanguage=language; this.tempTitle=translatedTexts.read("name",language); }
+
+    private JsonObject buildDefinition() {
+        JsonObject json = this.originalDefinition.deepCopy();
+        translatedTexts.put("name",editingLanguage,tempTitle);
+        translatedTexts.apply(json);
+
+        JsonObject iconObj = new JsonObject();
+        iconObj.addProperty("item", this.tempIconItem);
+        boolean preserveCustomIcon = this.originalDefinition.has("icon") && this.originalDefinition.get("icon").isJsonObject()
+                && !this.originalDefinition.getAsJsonObject("icon").has("item") && "minecraft:knowledge_book".equals(this.tempIconItem);
+        if (!preserveCustomIcon) json.add("icon", iconObj);
+
+        json.addProperty("order", this.tempSortOrder);
+        json.addProperty("default_chapter", this.tempDefault);
+        json.addProperty("hidden", this.tempHidden);
+
+        return json;
     }
 
     private void deleteChapterOnServer() {
@@ -391,9 +415,10 @@ public class ChapterEditorScreen extends Screen {
 
         int color = Questlog.getConfig().colors.textColor | 0xFF000000;
         ps.drawString(this.font, Component.translatable("questlog.editor.chapter_id"), panel1X + 15, panel1Y + 10, color, false);
-        ps.drawString(this.font, Component.translatable("questlog.editor.title_label"), panel1X + 15, panel1Y + 42, color, false);
-        ps.drawString(this.font, Component.translatable("questlog.editor.icon_label"), panel1X + 15, panel1Y + 74, color, false);
-        ps.drawString(this.font, Component.translatable("questlog.editor.order_label"), panel1X + 15, panel1Y + 106, color, false);
+        ps.drawString(this.font,Component.translatable("questlog.editor.language"),panel1X+15,panel1Y+42,color,false);
+        ps.drawString(this.font, Component.translatable("questlog.editor.title_label"), panel1X + 15, panel1Y + 74, color, false);
+        ps.drawString(this.font, Component.translatable("questlog.editor.icon_label"), panel1X + 15, panel1Y + 106, color, false);
+        ps.drawString(this.font, Component.translatable("questlog.editor.order_label"), panel1X + 15, panel1Y + 138, color, false);
 
         ps.drawString(this.font, "Quests in Chapter:", panel2X + 15, panel2Y + 12, color, false);
 
@@ -405,7 +430,7 @@ public class ChapterEditorScreen extends Screen {
         for (int i = startIdx; i < endIdx; i++) {
             ResourceLocation qKey = allQuests.get(i);
             JsonObject qJson = DefinitionUtil.getCachedQuest(qKey);
-            String title = qJson.has("title") ? qJson.get("title").getAsString() : qKey.getPath();
+            String title = QuestText.text(qJson,"title",editingLanguage,qKey.getPath());
 
             int rowY = panel2Y + 28 + (i - startIdx) * 22;
 
